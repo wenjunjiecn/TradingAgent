@@ -7,7 +7,7 @@ const kill = require('tree-kill');
 let mainWindow;
 let serverProcess = null;
 const SERVER_URL = 'http://localhost:4111';
-const PROJECT_ROOT = path.join(__dirname, '..');
+const PROJECT_ROOT = path.join(__dirname, '..', '..');
 
 function checkServerReady(callback) {
   const req = http.get(SERVER_URL, (res) => {
@@ -28,8 +28,8 @@ function checkServerReady(callback) {
 function startMastraServer() {
   console.log('Starting Mastra server in:', PROJECT_ROOT);
   
-  // Use npx mastra dev to start the server
-  serverProcess = spawn('npx', ['mastra', 'dev'], {
+  // Start Mastra dev server using npm workspace script
+  serverProcess = spawn('npm', ['run', 'dev:agent'], {
     cwd: PROJECT_ROOT,
     shell: true,
     env: { ...process.env, PORT: '4111' }

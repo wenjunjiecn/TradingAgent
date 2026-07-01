@@ -24,6 +24,5 @@ dist/
 mastra-studio-source/
 
 # Desktop client files
-desktop-client/node_modules/
-desktop-client/dist/
+apps/desktop/dist/
 *.zip
