@@ -6,9 +6,11 @@ node_modules/
 
 # Mastra runtime files
 .mastra/
-mastra.db
-mastra.db-shm
-mastra.db-wal
+*.db
+*.db-shm
+*.db-wal
+*.duckdb
+*.duckdb.wal
 
 # Build output
 dist/
