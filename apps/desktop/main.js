@@ -89,6 +89,11 @@ function createWindow() {
     }
   });
 
+  // Inject Chinese translations on dom-ready
+  mainWindow.webContents.on('dom-ready', () => {
+    mainWindow.webContents.executeJavaScript(translateScript);
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -118,3 +123,79 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+const translateScript = `
+  (function() {
+    const translations = {
+      'Mastra Studio': 'Trading Agent',
+      'Agents': '智能体 (Agents)',
+      'Prompts': '提示词 (Prompts)',
+      'Workflows': '工作流 (Workflows)',
+      'Processors': '数据处理器',
+      'MCP Servers': 'MCP 服务端',
+      'Tools': '工具箱 (Tools)',
+      'Workspaces': '工作空间',
+      'Request Context': '请求上下文',
+      'Overview': '评估总览',
+      'Scorers': '打分器 (Scorers)',
+      'Datasets': '数据集 (Datasets)',
+      'Experiments': '实验对比',
+      'Metrics': '指标监控 (Metrics)',
+      'Traces': '调用链追踪 (Traces)',
+      'Logs': '系统日志 (Logs)',
+      'Settings': '系统设置',
+      'Resources': '开发资源',
+      'Search': '全局搜索 (Search)',
+      'Primitives': '基础组件',
+      'Evaluation': '模型评估',
+      'Observability': '可观测性'
+    };
+
+    function translateText(text) {
+      const trimmed = text.trim();
+      return translations[trimmed] || text;
+    }
+
+    function translateNode(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const translated = translateText(node.nodeValue);
+        if (translated !== node.nodeValue) {
+          node.nodeValue = translated;
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // Translate placeholders
+        if (node.hasAttribute('placeholder')) {
+          const placeholder = node.getAttribute('placeholder');
+          if (placeholder === 'Search...') {
+            node.setAttribute('placeholder', '搜索...');
+          }
+        }
+        // Translate tooltips
+        if (node.hasAttribute('aria-label')) {
+          const label = node.getAttribute('aria-label');
+          if (translations[label]) {
+            node.setAttribute('aria-label', translations[label]);
+          }
+        }
+        for (const child of node.childNodes) {
+          translateNode(child);
+        }
+      }
+    }
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          translateNode(node);
+        }
+        if (mutation.type === 'characterData') {
+          translateNode(mutation.target);
+        }
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    translateNode(document.body);
+    document.title = document.title.replace('Mastra Studio', 'Trading Agent');
+  })();
+`;
