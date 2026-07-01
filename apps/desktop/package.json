@@ -3,18 +3,23 @@
   "productName": "Trading Agent",
   "version": "1.0.0",
   "description": "Desktop app for Mastra Trading Agent",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
+    "build": "tsc",
+    "prestart": "npm run build",
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --mac"
   },
   "dependencies": {
+    "@trading-agent/shared": "*",
     "tree-kill": "^1.2.2"
   },
   "devDependencies": {
+    "@types/node": "^20.12.12",
     "electron": "^31.0.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.4.5"
   },
   "build": {
     "appId": "com.tradingagent.app",
@@ -24,7 +29,7 @@
       "target": ["dmg", "zip"]
     },
     "directories": {
-      "output": "dist"
+      "output": "dist-app"
     }
   }
 }

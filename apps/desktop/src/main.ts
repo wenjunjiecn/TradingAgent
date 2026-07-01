@@ -1,15 +1,18 @@
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
-const { spawn } = require('child_process');
-const http = require('http');
-const kill = require('tree-kill');
+import { app, BrowserWindow } from 'electron';
+import * as path from 'path';
+import { spawn, ChildProcess } from 'child_process';
+import * as http from 'http';
+import kill from 'tree-kill';
 
-let mainWindow;
-let serverProcess = null;
+// Import shared types for compile check
+import { TradeSignal, KLineData, Position } from '@trading-agent/shared';
+
+let mainWindow: BrowserWindow | null;
+let serverProcess: ChildProcess | null = null;
 const SERVER_URL = 'http://localhost:4111';
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 
-function checkServerReady(callback) {
+function checkServerReady(callback: (ready: boolean) => void) {
   const req = http.get(SERVER_URL, (res) => {
     if (res.statusCode === 200) {
       callback(true);
@@ -35,13 +38,17 @@ function startMastraServer() {
     env: { ...process.env, PORT: '4111' }
   });
 
-  serverProcess.stdout.on('data', (data) => {
-    console.log(`[Mastra Out]: ${data}`);
-  });
+  if (serverProcess.stdout) {
+    serverProcess.stdout.on('data', (data) => {
+      console.log(`[Mastra Out]: ${data}`);
+    });
+  }
 
-  serverProcess.stderr.on('data', (data) => {
-    console.error(`[Mastra Err]: ${data}`);
-  });
+  if (serverProcess.stderr) {
+    serverProcess.stderr.on('data', (data) => {
+      console.error(`[Mastra Err]: ${data}`);
+    });
+  }
 
   serverProcess.on('close', (code) => {
     console.log(`Mastra process exited with code ${code}`);
@@ -54,7 +61,9 @@ function pollServerAndLoad() {
       if (ready) {
         clearInterval(interval);
         console.log('Server is ready! Loading application.');
-        mainWindow.loadURL(SERVER_URL);
+        if (mainWindow) {
+          mainWindow.loadURL(SERVER_URL);
+        }
       }
     });
   }, 1000);
@@ -73,17 +82,23 @@ function createWindow() {
   });
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    if (mainWindow) {
+      mainWindow.show();
+    }
   });
 
   // Check if server is already running
   checkServerReady((running) => {
     if (running) {
       console.log('Mastra server already running, connecting...');
-      mainWindow.loadURL(SERVER_URL);
+      if (mainWindow) {
+        mainWindow.loadURL(SERVER_URL);
+      }
     } else {
       console.log('Mastra server not running. Starting server and loading splash screen...');
-      mainWindow.loadFile(path.join(__dirname, 'loading.html'));
+      if (mainWindow) {
+        mainWindow.loadFile(path.join(__dirname, '..', 'loading.html'));
+      }
       startMastraServer();
       pollServerAndLoad();
     }
@@ -91,7 +106,9 @@ function createWindow() {
 
   // Inject Chinese translations on dom-ready
   mainWindow.webContents.on('dom-ready', () => {
-    mainWindow.webContents.executeJavaScript(translateScript);
+    if (mainWindow) {
+      mainWindow.webContents.executeJavaScript(translateScript);
+    }
   });
 
   mainWindow.on('closed', () => {

@@ -4,7 +4,8 @@
   "private": true,
   "description": "Trading Agent Monorepo workspace",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev:agent": "npm run dev -w agent-server",
