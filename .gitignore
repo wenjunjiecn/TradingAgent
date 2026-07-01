@@ -19,3 +19,11 @@ dist/
 
 # OS
 .DS_Store
+
+# Cloned Mastra Studio source code
+mastra-studio-source/
+
+# Desktop client files
+desktop-client/node_modules/
+desktop-client/dist/
+*.zip

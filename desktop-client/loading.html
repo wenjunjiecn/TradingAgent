@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Starting Trading Agent...</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --text: #f4f4f5;
+      --primary: #10b981;
+      --primary-glow: rgba(16, 185, 129, 0.15);
+      --accent-gradient: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      user-select: none;
+    }
+    .container {
+      text-align: center;
+      animation: fadeIn 0.8s ease-out;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.025em;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      color: #a1a1aa;
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+    .spinner-box {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 2rem;
+    }
+    .spinner {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      border: 3px solid transparent;
+      border-top-color: var(--primary);
+      border-bottom-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+    .pulse-ring {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      border: 1px solid rgba(16, 185, 129, 0.1);
+      border-radius: 50%;
+      animation: pulse 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0; }
+      50% { opacity: 0.5; }
+      100% { transform: scale(1.15); opacity: 0; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .status-text {
+      font-size: 0.9rem;
+      color: #71717a;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spinner-box">
+      <div class="spinner"></div>
+      <div class="pulse-ring"></div>
+    </div>
+    <h1>Trading Agent</h1>
+    <p>Starting Mastra Dev Server...</p>
+    <div class="status-text" id="status">Connecting to localhost:4111</div>
+  </div>
+  <script>
+    // Just a placeholder/visual check
+    const statusEl = document.getElementById('status');
+    let dots = '';
+    setInterval(() => {
+      dots = dots.length >= 3 ? '' : dots + '.';
+      statusEl.textContent = 'Connecting to localhost:4111' + dots;
+    }, 500);
+  </script>
+</body>
+</html>
