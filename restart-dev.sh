@@ -10,17 +10,20 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}=== Trading Agent 开发环境一键重启工具 ===${NC}"
 
 # 1. 清理已有的开发进程
-echo -e "${YELLOW}[1/3] 正在清理已有的旧进程 (Mastra, Electron, Nodemon)...${NC}"
+echo -e "${YELLOW}[1/3] 正在清理已有的旧进程 (Mastra, Studio, Electron, Nodemon)...${NC}"
 pkill -f "mastra" 2>/dev/null
+pkill -f "vite" 2>/dev/null
 pkill -f "electron" 2>/dev/null
 pkill -f "nodemon" 2>/dev/null
 
-# 2. 释放端口 4111
-PORT_PIDS=$(lsof -ti :4111)
-if [ ! -z "$PORT_PIDS" ]; then
-  echo -e "${YELLOW}发现 4111 端口被占用，正在释放 PID: ${PORT_PIDS}...${NC}"
-  kill -9 $PORT_PIDS 2>/dev/null
-fi
+# 2. 释放端口 3000 和 4111
+for PORT in 3000 4111; do
+  PORT_PIDS=$(lsof -ti :$PORT)
+  if [ ! -z "$PORT_PIDS" ]; then
+    echo -e "${YELLOW}发现 ${PORT} 端口被占用，正在释放 PID: ${PORT_PIDS}...${NC}"
+    kill -9 $PORT_PIDS 2>/dev/null
+  fi
+done
 
 sleep 1.5
 

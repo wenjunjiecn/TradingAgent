@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"mastra dev\" \"npx mastra studio\"",
+    "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start"
   },
