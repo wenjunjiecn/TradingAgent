@@ -15,12 +15,15 @@ const ConfigProbe = () => {
   return <pre data-testid="config">{JSON.stringify(config)}</pre>;
 };
 
-const renderProvider = () => {
+const renderProvider = ({
+  endpoint = BASE_URL,
+  defaultHeaders,
+}: { endpoint?: string; defaultHeaders?: Record<string, string> } = {}) => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <StudioConfigProvider endpoint={BASE_URL}>
+      <StudioConfigProvider endpoint={endpoint} defaultHeaders={defaultHeaders}>
         <ConfigProbe />
       </StudioConfigProvider>
     </QueryClientProvider>,
@@ -94,5 +97,51 @@ describe('StudioConfigProvider auth header URL handoff', () => {
     const config = JSON.parse(screen.getByTestId('config').textContent ?? '{}');
     expect(config.headers.Authorization).toBe('Bearer new-token');
     expect(config.headers['X-Trace']).toBe('trace-1');
+  });
+
+  it('uses runtime config instead of stored config when desktop auth is present', async () => {
+    const statusRequest = vi.fn<(header: string | null) => void>();
+    server.use(
+      http.get(BASE_URL, ({ request }) => {
+        statusRequest(request.headers.get('x-trading-agent-token'));
+        return HttpResponse.text('ok');
+      }),
+    );
+    window.localStorage.setItem(
+      LOCAL_STORAGE_KEY,
+      JSON.stringify({
+        baseUrl: 'http://localhost:3000',
+        headers: { 'X-Trace': 'stale' },
+        apiPrefix: '/stale-api',
+      }),
+    );
+
+    renderProvider({ defaultHeaders: { 'x-trading-agent-token': 'desktop-token' } });
+
+    await waitFor(() => expect(statusRequest).toHaveBeenCalledWith('desktop-token'));
+
+    const config = JSON.parse(screen.getByTestId('config').textContent ?? '{}');
+    expect(config.baseUrl).toBe(BASE_URL);
+    expect(config.apiPrefix).toBe('/api');
+    expect(config.headers['x-trading-agent-token']).toBe('desktop-token');
+    expect(config.headers['X-Trace']).toBeUndefined();
+    expect(window.localStorage.getItem(LOCAL_STORAGE_KEY)).toBeNull();
+  });
+
+  it('discards malformed stored config instead of failing app startup', async () => {
+    server.use(
+      http.get(BASE_URL, () => {
+        return HttpResponse.text('ok');
+      }),
+    );
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, '{bad json');
+
+    renderProvider();
+
+    await waitFor(() => {
+      const config = JSON.parse(screen.getByTestId('config').textContent ?? '{}');
+      expect(config.baseUrl).toBe(BASE_URL);
+    });
+    expect(window.localStorage.getItem(LOCAL_STORAGE_KEY)).toBeNull();
   });
 });

@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "mastra dev",
-    "build": "mastra build",
+    "prebuild": "npm run build -w @trading-agent/shared",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && mastra build",
     "start": "mastra start"
   },
   "dependencies": {
@@ -24,6 +26,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "typescript": "^6.0.3"
   }
 }

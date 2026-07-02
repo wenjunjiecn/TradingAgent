@@ -5,7 +5,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@mastra/pla
 import { Txt } from '@mastra/playground-ui/components/Txt';
 import { Icon } from '@mastra/playground-ui/icons/Icon';
 import { cn } from '@mastra/playground-ui/utils/cn';
-import { jsonSchemaToZod } from '@mastra/schema-compat/json-to-zod';
 import { ChevronRight, CirclePause, MoveDownLeft, MoveUpRight, Play } from 'lucide-react';
 import { useState } from 'react';
 import { parse } from 'superjson';
@@ -14,7 +13,7 @@ import { z } from 'zod';
 import type { SuspendedStep } from './use-workflow-trigger';
 import { WorkflowInputData } from './workflow-input-data';
 
-import { resolveSerializedZodOutput } from '@/lib/form/utils';
+import { jsonSchemaToZodSchema } from '@/lib/form/utils';
 
 export interface ResumeStepParams {
   stepId: string | string[];
@@ -75,9 +74,7 @@ export function WorkflowSuspendedSteps({
         const stepDefinition = workflow.allSteps[step.stepId];
         if (!stepDefinition || stepDefinition.isWorkflow) return null;
 
-        const stepSchema = stepDefinition?.resumeSchema
-          ? resolveSerializedZodOutput(jsonSchemaToZod(parse(stepDefinition.resumeSchema)))
-          : z.record(z.string(), z.any());
+        const stepSchema = stepDefinition?.resumeSchema ? jsonSchemaToZodSchema(parse(stepDefinition.resumeSchema)) : z.record(z.string(), z.any());
 
         return (
           <SuspendedStepCard

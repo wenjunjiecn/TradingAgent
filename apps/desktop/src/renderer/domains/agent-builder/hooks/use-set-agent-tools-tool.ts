@@ -1,7 +1,7 @@
 import { createTool } from '@mastra/client-js';
 import { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { z } from 'zod-v4';
+import { z } from 'zod/v4';
 
 import { routeToolInputToFormKeys } from '../services/route-tool-input';
 import type { AgentTool } from '../types/agent-tool';

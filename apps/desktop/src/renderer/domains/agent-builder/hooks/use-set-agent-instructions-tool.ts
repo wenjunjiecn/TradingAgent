@@ -1,7 +1,7 @@
 import { createTool } from '@mastra/client-js';
 import { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { z } from 'zod-v4';
+import { z } from 'zod/v4';
 
 import type { AgentBuilderEditFormValues } from '@/domains/agent-builder/schemas';
 import { MAX_GENERATED_INSTRUCTIONS_CHARS } from '@/domains/agent-builder/services/build-form-snapshot';

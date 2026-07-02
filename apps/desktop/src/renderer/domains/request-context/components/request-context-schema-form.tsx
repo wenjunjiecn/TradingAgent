@@ -1,12 +1,11 @@
 import { CopyButton } from '@mastra/playground-ui/components/CopyButton';
 import { Txt } from '@mastra/playground-ui/components/Txt';
-import { jsonSchemaToZod } from '@mastra/schema-compat/json-to-zod';
 import { useMemo } from 'react';
 import { parse } from 'superjson';
 import { useSchemaRequestContext } from '../context/schema-request-context';
 import { RequestContextLabel } from './request-context-label';
 import { DynamicForm } from '@/lib/form';
-import { resolveSerializedZodOutput } from '@/lib/form/utils';
+import { jsonSchemaToZodSchema } from '@/lib/form/utils';
 
 export interface RequestContextSchemaFormProps {
   /**
@@ -34,8 +33,7 @@ export const RequestContextSchemaForm = ({ labelTooltip, requestContextSchema }:
   // Parse the schema
   const zodSchema = useMemo(() => {
     try {
-      const jsonSchema = parse(requestContextSchema) as Parameters<typeof jsonSchemaToZod>[0];
-      return resolveSerializedZodOutput(jsonSchemaToZod(jsonSchema));
+      return jsonSchemaToZodSchema(parse(requestContextSchema));
     } catch (error) {
       console.error('Failed to parse requestContextSchema:', error);
       return null;

@@ -3,12 +3,15 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { spawn, ChildProcess } from 'child_process';
 import * as http from 'http';
+import { randomBytes } from 'crypto';
 import kill from 'tree-kill';
 
 let mainWindow: BrowserWindow | null;
 const devProcesses: ChildProcess[] = [];
 const MASTRA_SERVER_HOST = '127.0.0.1';
 const MASTRA_SERVER_PORT = process.env.MASTRA_SERVER_PORT || process.env.PORT || '4111';
+const DESKTOP_AUTH_TOKEN = process.env.TRADING_AGENT_DESKTOP_TOKEN || randomBytes(32).toString('hex');
+process.env.TRADING_AGENT_DESKTOP_TOKEN = DESKTOP_AUTH_TOKEN;
 const MASTRA_API_URL = `http://${MASTRA_SERVER_HOST}:${MASTRA_SERVER_PORT}`;
 const MASTRA_AGENTS_URL = `${MASTRA_API_URL}/api/agents`;
 const RENDERER_DEV_URL = 'http://localhost:3000';
@@ -22,17 +25,32 @@ const EMBEDDED_SERVER_DIR = app.isPackaged
   : path.join(PROJECT_ROOT, 'apps', 'agent-server', '.mastra', 'output');
 const EMBEDDED_SERVER_ENTRY = path.join(EMBEDDED_SERVER_DIR, 'index.mjs');
 
-function checkUrlReady(url: string, callback: (ready: boolean) => void) {
+function checkUrlReady(url: string, callback: (ready: boolean) => void, timeoutMs = 2500) {
+  let settled = false;
+  const finish = (ready: boolean) => {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    callback(ready);
+  };
+
   const req = http.get(url, (res) => {
+    res.resume();
     if (res.statusCode === 200) {
-      callback(true);
+      finish(true);
     } else {
-      callback(false);
+      finish(false);
     }
   });
 
   req.on('error', () => {
-    callback(false);
+    finish(false);
+  });
+
+  req.setTimeout(timeoutMs, () => {
+    req.destroy();
+    finish(false);
   });
 
   req.end();
@@ -63,10 +81,23 @@ function waitForUrlReady(url: string, timeoutMs: number): Promise<void> {
 }
 
 function checkTradingAgentReady(callback: (ready: boolean) => void) {
-  const req = http.get(MASTRA_AGENTS_URL, (res) => {
+  let settled = false;
+  const finish = (ready: boolean) => {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    callback(ready);
+  };
+
+  const req = http.get(MASTRA_AGENTS_URL, {
+    headers: {
+      'x-trading-agent-token': DESKTOP_AUTH_TOKEN,
+    },
+  }, (res) => {
     if (res.statusCode !== 200) {
       res.resume();
-      callback(false);
+      finish(false);
       return;
     }
 
@@ -76,12 +107,17 @@ function checkTradingAgentReady(callback: (ready: boolean) => void) {
       body += chunk;
     });
     res.on('end', () => {
-      callback(body.includes('"trading-agent"'));
+      finish(body.includes('"trading-agent"'));
     });
   });
 
   req.on('error', () => {
-    callback(false);
+    finish(false);
+  });
+
+  req.setTimeout(2500, () => {
+    req.destroy();
+    finish(false);
   });
 
   req.end();
@@ -142,6 +178,10 @@ function startDevProcess(label: string, scriptName: string, env: NodeJS.ProcessE
     }
   });
 
+  childProcess.on('error', (error) => {
+    console.error(`${label} process failed to start:`, error);
+  });
+
   return childProcess;
 }
 
@@ -191,7 +231,23 @@ function startEmbeddedAgentServer() {
     }
   });
 
+  childProcess.on('error', (error) => {
+    console.error('Embedded Mastra API process failed to start:', error);
+  });
+
   return childProcess;
+}
+
+function loadLoadingScreen() {
+  if (!mainWindow) {
+    return;
+  }
+
+  mainWindow.loadFile(LOADING_SCREEN, {
+    query: {
+      port: MASTRA_SERVER_PORT,
+    },
+  });
 }
 
 function loadRenderer() {
@@ -207,7 +263,59 @@ function loadRenderer() {
   mainWindow.loadURL(RENDERER_DEV_URL);
 }
 
+function showStartupError(error: unknown) {
+  console.error('Failed to start Trading Agent desktop shell:', error);
+  if (!mainWindow) {
+    return;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+        <title>Trading Agent Startup Error</title>
+        <style>
+          body {
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #101113;
+            color: #f4f4f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          }
+          main {
+            width: min(560px, calc(100vw - 48px));
+            line-height: 1.5;
+          }
+          h1 {
+            font-size: 20px;
+            margin: 0 0 12px;
+          }
+          pre {
+            overflow: auto;
+            border: 1px solid #303236;
+            border-radius: 8px;
+            padding: 12px;
+            background: #181a1f;
+            color: #d4d4d8;
+          }
+        </style>
+      </head>
+      <body>
+        <main>
+          <h1>Trading Agent failed to start</h1>
+          <pre>${message.replace(/[<>&]/g, char => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[char] ?? char)}</pre>
+        </main>
+      </body>
+    </html>
+  `)}`);
+}
+
 function pollRendererAndLoad() {
+  const startedAt = Date.now();
   const interval = setInterval(() => {
     checkUrlReady(RENDERER_DEV_URL, (ready) => {
       if (ready) {
@@ -216,14 +324,17 @@ function pollRendererAndLoad() {
         loadRenderer();
       }
     });
+
+    if (Date.now() - startedAt >= 60_000) {
+      clearInterval(interval);
+      showStartupError(new Error(`Timed out waiting for renderer dev server at ${RENDERER_DEV_URL}`));
+    }
   }, 1000);
 }
 
 function startMissingDevServices() {
   if (app.isPackaged) {
-    if (mainWindow) {
-      mainWindow.loadFile(LOADING_SCREEN);
-    }
+    loadLoadingScreen();
 
     waitForTradingAgentReady(1000)
       .catch(() => {
@@ -235,61 +346,20 @@ function startMissingDevServices() {
         loadRenderer();
       })
       .catch((error) => {
-        console.error('Failed to start embedded Mastra API:', error);
-        if (mainWindow) {
-          const message = error instanceof Error ? error.message : String(error);
-          mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
-            <!doctype html>
-            <html>
-              <head>
-                <meta charset="UTF-8" />
-                <title>Trading Agent Startup Error</title>
-                <style>
-                  body {
-                    margin: 0;
-                    height: 100vh;
-                    display: grid;
-                    place-items: center;
-                    background: #101113;
-                    color: #f4f4f5;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                  }
-                  main {
-                    width: min(560px, calc(100vw - 48px));
-                    line-height: 1.5;
-                  }
-                  h1 {
-                    font-size: 20px;
-                    margin: 0 0 12px;
-                  }
-                  pre {
-                    overflow: auto;
-                    border: 1px solid #303236;
-                    border-radius: 8px;
-                    padding: 12px;
-                    background: #181a1f;
-                    color: #d4d4d8;
-                  }
-                </style>
-              </head>
-              <body>
-                <main>
-                  <h1>Trading Agent failed to start</h1>
-                  <pre>${message.replace(/[<>&]/g, char => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[char] ?? char)}</pre>
-                </main>
-              </body>
-            </html>
-          `)}`);
-        }
+        showStartupError(error);
       });
     return;
   }
 
-  checkUrlReady(MASTRA_API_URL, (apiRunning) => {
+  checkTradingAgentReady((apiRunning) => {
     if (apiRunning) {
       console.log('Mastra API already running.');
     } else {
-      startDevProcess('Mastra API', 'dev:agent', { HOST: MASTRA_SERVER_HOST, PORT: MASTRA_SERVER_PORT });
+      startDevProcess('Mastra API', 'dev:agent', {
+        HOST: MASTRA_SERVER_HOST,
+        PORT: MASTRA_SERVER_PORT,
+        TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
+      });
     }
 
     checkUrlReady(RENDERER_DEV_URL, (rendererRunning) => {
@@ -300,10 +370,12 @@ function startMissingDevServices() {
       }
 
       console.log('Renderer dev server not running. Starting Vite and loading splash screen...');
-      if (mainWindow) {
-        mainWindow.loadFile(LOADING_SCREEN);
-      }
-      startDevProcess('Renderer', 'dev:renderer', { MASTRA_SERVER_HOST, MASTRA_SERVER_PORT });
+      loadLoadingScreen();
+      startDevProcess('Renderer', 'dev:renderer', {
+        MASTRA_SERVER_HOST,
+        MASTRA_SERVER_PORT,
+        TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
+      });
       pollRendererAndLoad();
     });
   });

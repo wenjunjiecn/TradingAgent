@@ -218,7 +218,7 @@ const routesManifestPlugin = (): Plugin => {
 export default defineConfig(({ mode }) => {
   const targetPort = process.env.MASTRA_SERVER_PORT || '4111';
   const targetHost = process.env.MASTRA_SERVER_HOST || '127.0.0.1';
-  const autoDetectUrl = process.env.MASTRA_AUTO_DETECT_URL ?? (mode === 'development' ? 'true' : 'false');
+  const autoDetectUrl = process.env.MASTRA_AUTO_DETECT_URL ?? 'false';
 
   const commonConfig: UserConfig = {
     plugins: [

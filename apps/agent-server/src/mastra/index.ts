@@ -8,9 +8,18 @@ import { MastraCompositeStore } from '@mastra/core/storage';
 import { LocalSkillSource, Workspace } from '@mastra/core/workspace';
 import { MastraEditor } from '@mastra/editor';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
-import { tradingAgent } from './agents/trading-agent';
+import type { Middleware } from '@mastra/core/server';
+import {
+  marketAnalysisAgent,
+  riskAnalysisAgent,
+  sentimentAnalysisAgent,
+  tradingAgent,
+} from './agents/trading-agent';
 import { tradingMcpServer } from './mcps/trading-mcp-server';
 import { tradingWorkflow } from './workflows/trading-workflow';
+
+const DESKTOP_AUTH_HEADER = 'x-trading-agent-token';
+const desktopAuthToken = process.env.TRADING_AGENT_DESKTOP_TOKEN;
 
 function findProjectRoot(startDir: string): string {
   let current = resolve(startDir);
@@ -39,6 +48,33 @@ function findProjectRoot(startDir: string): string {
 
 const projectRoot = findProjectRoot(process.env.INIT_CWD ?? process.cwd());
 
+const desktopAuthMiddleware: Middleware = {
+  path: '*',
+  handler: async (c, next) => {
+    if (!desktopAuthToken || c.req.method === 'OPTIONS' || c.req.path === '/refresh-events') {
+      return next();
+    }
+
+    if (c.req.header(DESKTOP_AUTH_HEADER) !== desktopAuthToken) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    return next();
+  },
+};
+
+function resolveCorsOrigin(origin: string): string | null {
+  if (origin === 'http://localhost:3000' || origin === 'http://127.0.0.1:3000') {
+    return origin;
+  }
+
+  if (desktopAuthToken && (origin === 'null' || origin === 'file://')) {
+    return origin;
+  }
+
+  return null;
+}
+
 const workspace = new Workspace({
   id: 'trading-agent-workspace',
   name: 'Trading Agent Workspace',
@@ -63,7 +99,12 @@ const storage = new MastraCompositeStore({
 
 export const mastra = new Mastra({
   workflows: { tradingWorkflow },
-  agents: { tradingAgent },
+  agents: {
+    tradingAgent,
+    marketAnalysisAgent,
+    sentimentAnalysisAgent,
+    riskAnalysisAgent,
+  },
   mcpServers: { tradingMcpServer },
   workspace,
   storage,
@@ -71,15 +112,11 @@ export const mastra = new Mastra({
     source: 'db',
   }),
   server: {
+    middleware: desktopAuthMiddleware,
     cors: {
-      origin: [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'file://',
-        'null',
-      ],
+      origin: resolveCorsOrigin,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization', 'x-mastra-client-type'],
+      allowHeaders: ['Content-Type', 'Authorization', 'x-mastra-client-type', DESKTOP_AUTH_HEADER],
       credentials: true
     }
   },

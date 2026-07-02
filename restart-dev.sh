@@ -14,6 +14,7 @@ echo -e "${YELLOW}[1/3] 正在清理已有的旧进程 (Mastra, Renderer, Electr
 pkill -f "mastra" 2>/dev/null
 pkill -f "vite" 2>/dev/null
 pkill -f "electron" 2>/dev/null
+pkill -f "apps/desktop/dist-app/.*/Trading Agent.app" 2>/dev/null
 pkill -f "nodemon" 2>/dev/null
 
 # 2. 释放端口 3000 和 4111

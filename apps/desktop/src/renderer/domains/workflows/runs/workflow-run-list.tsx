@@ -9,7 +9,7 @@ import {
 } from '@mastra/playground-ui/components/ThreadList';
 import { Txt } from '@mastra/playground-ui/components/Txt';
 import { Icon } from '@mastra/playground-ui/icons/Icon';
-import { formatDate } from 'date-fns';
+import { format } from 'date-fns';
 import { useState } from 'react';
 import { WorkflowRunStatusIcon } from '../components/workflow-run-status-icon';
 import { usePermissions } from '@/domains/auth/hooks/use-permissions';
@@ -112,7 +112,7 @@ export const WorkflowRecentRuns = ({ workflowId, runId }: WorkflowRecentRunsProp
                             </span>
                             {run?.snapshot && typeof run.snapshot === 'object' && run.snapshot.timestamp && (
                               <span className="shrink-0 text-neutral3">
-                                {formatDate(run.snapshot.timestamp, 'MMM d, yyyy h:mm a')}
+                                {format(run.snapshot.timestamp, 'MMM d, yyyy h:mm a')}
                               </span>
                             )}
                           </span>

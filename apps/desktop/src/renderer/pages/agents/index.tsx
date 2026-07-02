@@ -47,15 +47,31 @@ function Agents() {
   }
 
   return (
-    <PageLayout>
+    <PageLayout className="gap-0 p-0">
       <AgentHeaderCreateAction />
-      <PageLayout.TopArea>
-        <div className="max-w-120">
-          <ListSearch onSearch={setSearch} label="Filter agents" placeholder="Filter by name or instructions" />
+      <PageLayout.TopArea className="border-b border-border1 bg-surface2/40 p-5 pb-5 lg:p-6 lg:pb-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-md border border-border1 bg-surface3 px-2 py-1 text-[11px] font-medium leading-none text-neutral3">
+                {Object.keys(agents).length} agents
+              </span>
+              <span className="rounded-md border border-border1 bg-surface3 px-2 py-1 text-[11px] font-medium leading-none text-neutral3">
+                trading research
+              </span>
+            </div>
+            <h1 className="text-2xl font-semibold leading-8 text-neutral6">Agent Team</h1>
+            <p className="mt-1 text-sm leading-6 text-neutral3">市场结构、情绪面、技术信号、风险检查</p>
+          </div>
+          <div className="w-full max-w-[28rem]">
+            <ListSearch onSearch={setSearch} label="Filter agents" placeholder="搜索角色、能力或说明" />
+          </div>
         </div>
       </PageLayout.TopArea>
 
-      <AgentsList agents={agents} isLoading={isLoading} search={search} />
+      <div className="p-5 lg:p-6">
+        <AgentsList agents={agents} isLoading={isLoading} search={search} />
+      </div>
     </PageLayout>
   );
 }

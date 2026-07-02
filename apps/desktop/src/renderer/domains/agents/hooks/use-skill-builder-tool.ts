@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/client-js';
 import { useMemo, useRef } from 'react';
-import { z } from 'zod-v4';
+import { z } from 'zod/v4';
 
 export const SKILL_BUILDER_TOOL_NAME = 'skillBuilderTool';
 export const SKILL_READER_TOOL_NAME = 'readSkillForm';

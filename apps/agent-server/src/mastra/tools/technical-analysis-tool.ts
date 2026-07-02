@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { KLineDataSchema, IndicatorsSchema, type KLineData } from '@trading-agent/shared';
+import { KLineDataSchema, IndicatorsSchema, type Indicators, type KLineData } from '@trading-agent/shared';
 
 /** Simple Moving Average over last `period` closes */
 function sma(closes: number[], period: number): number {
@@ -31,6 +31,7 @@ function rsi(closes: number[], period = 14): number {
   const losses = recent.filter(c => c < 0).map(Math.abs);
   const avgGain = gains.reduce((s, v) => s + v, 0) / period;
   const avgLoss = losses.reduce((s, v) => s + v, 0) / period;
+  if (avgGain === 0 && avgLoss === 0) return 50;
   if (avgLoss === 0) return 100;
   return 100 - 100 / (1 + avgGain / avgLoss);
 }
@@ -47,23 +48,29 @@ function macdCalc(closes: number[]): { macd: number; signal: number; histogram: 
   return { macd: macdVal, signal: signalVal, histogram: macdVal - signalVal };
 }
 
+export function calculateIndicators(klines: KLineData[]): Indicators {
+  if (klines.length < 60) {
+    throw new Error(`Insufficient data for technical analysis: ${klines.length} bars (need >= 60)`);
+  }
+
+  const closes = klines.map(k => k.close);
+  const { macd, signal, histogram } = macdCalc(closes);
+  return {
+    ma20: sma(closes, 20),
+    ma60: sma(closes, 60),
+    rsi: rsi(closes),
+    macd,
+    macdSignal: signal,
+    macdHistogram: histogram,
+  };
+}
+
 export const technicalAnalysisTool = createTool({
   id: 'technical-analysis',
-  description: 'Calculate technical indicators (MA20, MA60, RSI14, MACD) from K-line data. Requires at least 20 bars.',
+  description: 'Calculate technical indicators (MA20, MA60, RSI14, MACD) from K-line data. Requires at least 60 bars.',
   inputSchema: z.object({
-    klines: z.array(KLineDataSchema).min(20).describe('K-line bars in chronological order (oldest first)'),
+    klines: z.array(KLineDataSchema).min(60).describe('K-line bars in chronological order (oldest first)'),
   }),
   outputSchema: IndicatorsSchema,
-  execute: async ({ klines }: { klines: KLineData[] }) => {
-    const closes = klines.map(k => k.close);
-    const { macd, signal, histogram } = macdCalc(closes);
-    return {
-      ma20: sma(closes, 20),
-      ma60: sma(closes, Math.min(60, closes.length)),
-      rsi: rsi(closes),
-      macd,
-      macdSignal: signal,
-      macdHistogram: histogram,
-    };
-  },
+  execute: async ({ klines }) => calculateIndicators(klines),
 });

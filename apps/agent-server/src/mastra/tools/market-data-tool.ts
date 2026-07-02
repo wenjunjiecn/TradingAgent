@@ -5,24 +5,57 @@ import { z } from 'zod';
 import { KLineDataSchema, type KLineData } from '@trading-agent/shared';
 
 const execFileAsync = promisify(execFile);
+const YAHOO_REQUEST_TIMEOUT_MS = 12_000;
 
-interface YahooChartResponse {
-  chart: {
-    result: Array<{
-      meta: { regularMarketPrice: number; symbol: string };
-      timestamp: number[];
-      indicators: {
-        quote: Array<{
-          open: (number | null)[];
-          high: (number | null)[];
-          low: (number | null)[];
-          close: (number | null)[];
-          volume: (number | null)[];
-        }>;
-      };
-    }> | null;
-    error: { code: string; description: string } | null;
-  };
+const marketDataPeriodSchema = z.enum(['1mo', '3mo', '6mo', '1y']);
+
+export type MarketDataPeriod = z.infer<typeof marketDataPeriodSchema>;
+
+export type MarketDataResult = {
+  symbol: string;
+  latestPrice: number;
+  klines: KLineData[];
+  dataPoints: number;
+};
+
+const nullableNumberArraySchema = z.array(z.number().finite().nullable());
+
+const YahooChartResponseSchema = z.object({
+  chart: z.object({
+    result: z.array(z.object({
+      meta: z.object({
+        regularMarketPrice: z.number().finite().optional(),
+        symbol: z.string().optional(),
+      }).passthrough(),
+      timestamp: z.array(z.number().finite()),
+      indicators: z.object({
+        quote: z.array(z.object({
+          open: nullableNumberArraySchema,
+          high: nullableNumberArraySchema,
+          low: nullableNumberArraySchema,
+          close: nullableNumberArraySchema,
+          volume: nullableNumberArraySchema,
+        }).passthrough()),
+      }).passthrough(),
+    }).passthrough()).nullable(),
+    error: z.object({
+      code: z.string(),
+      description: z.string(),
+    }).nullable(),
+  }).passthrough(),
+}).passthrough();
+
+type YahooChartResponse = z.infer<typeof YahooChartResponseSchema>;
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function fetchYahooChartJson(url: string, symbol: string): Promise<YahooChartResponse> {
@@ -32,16 +65,27 @@ async function fetchYahooChartJson(url: string, symbol: string): Promise<YahooCh
     'Accept-Language': 'en-US,en;q=0.9',
   };
 
-  const response = await fetch(url, { headers });
-  if (response.ok) {
-    return (await response.json()) as YahooChartResponse;
+  let fetchFailure: string | undefined;
+
+  try {
+    const response = await fetchWithTimeout(url, { headers }, YAHOO_REQUEST_TIMEOUT_MS);
+    if (response.ok) {
+      const parsed = YahooChartResponseSchema.safeParse(await response.json());
+      if (!parsed.success) {
+        throw new Error(`Unexpected Yahoo Finance response shape: ${parsed.error.message}`);
+      }
+      return parsed.data;
+    }
+    fetchFailure = `HTTP ${response.status}`;
+  } catch (error) {
+    fetchFailure = error instanceof Error ? error.message : String(error);
   }
 
   try {
     const { stdout } = await execFileAsync('curl', [
       '-fsSL',
       '--max-time',
-      '20',
+      String(Math.ceil(YAHOO_REQUEST_TIMEOUT_MS / 1000)),
       '-H',
       `User-Agent: ${headers['User-Agent']}`,
       '-H',
@@ -51,14 +95,18 @@ async function fetchYahooChartJson(url: string, symbol: string): Promise<YahooCh
       url,
     ], { maxBuffer: 10 * 1024 * 1024 });
 
-    return JSON.parse(stdout) as YahooChartResponse;
+    const parsed = YahooChartResponseSchema.safeParse(JSON.parse(stdout));
+    if (!parsed.success) {
+      throw new Error(`Unexpected Yahoo Finance response shape: ${parsed.error.message}`);
+    }
+    return parsed.data;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Yahoo Finance API error: HTTP ${response.status} for ${symbol}; curl fallback failed: ${message}`);
+    throw new Error(`Yahoo Finance API error for ${symbol}: fetch failed (${fetchFailure}); curl fallback failed: ${message}`);
   }
 }
 
-async function fetchYahooChart(symbol: string, range: string): Promise<KLineData[]> {
+async function fetchYahooChart(symbol: string, range: MarketDataPeriod): Promise<KLineData[]> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=1d&includePrePost=false`;
   const data = await fetchYahooChartJson(url, symbol);
   if (data.chart.error) {
@@ -68,25 +116,60 @@ async function fetchYahooChart(symbol: string, range: string): Promise<KLineData
   if (!result) throw new Error(`No data found for symbol: ${symbol}`);
 
   const timestamps = result.timestamp;
-  const quote = result.indicators.quote[0]!;
-  return timestamps
-    .map((ts, i): KLineData => ({
-      time: ts,
-      open: quote.open[i] ?? 0,
-      high: quote.high[i] ?? 0,
-      low: quote.low[i] ?? 0,
-      close: quote.close[i] ?? 0,
-      volume: quote.volume[i] ?? 0,
-    }))
-    .filter(k => k.close > 0);
+  const quote = result.indicators.quote[0];
+  if (!quote) {
+    throw new Error(`No OHLCV quote data found for symbol: ${symbol}`);
+  }
+
+  const klines: KLineData[] = [];
+  for (const [i, ts] of timestamps.entries()) {
+    const open = quote.open[i];
+    const high = quote.high[i];
+    const low = quote.low[i];
+    const close = quote.close[i];
+    const volume = quote.volume[i];
+
+    if (
+      typeof open !== 'number' ||
+      typeof high !== 'number' ||
+      typeof low !== 'number' ||
+      typeof close !== 'number' ||
+      typeof volume !== 'number'
+    ) {
+      continue;
+    }
+
+    if (open <= 0 || high <= 0 || low <= 0 || close <= 0 || volume < 0) {
+      continue;
+    }
+
+    klines.push({ time: ts, open, high, low, close, volume });
+  }
+
+  return klines;
+}
+
+export async function getMarketData(symbol: string, period: MarketDataPeriod = '3mo'): Promise<MarketDataResult> {
+  const upper = symbol.trim().toUpperCase();
+  const klines = await fetchYahooChart(upper, period);
+  if (klines.length < 20) {
+    throw new Error(`Insufficient data for ${upper}: ${klines.length} bars (need >= 20)`);
+  }
+
+  return {
+    symbol: upper,
+    latestPrice: klines[klines.length - 1].close,
+    klines,
+    dataPoints: klines.length,
+  };
 }
 
 export const marketDataTool = createTool({
   id: 'get-market-data',
   description: 'Fetch historical daily OHLCV K-line data for a US stock from Yahoo Finance (free, no API key needed)',
   inputSchema: z.object({
-    symbol: z.string().describe('US stock ticker, e.g. AAPL, TSLA, NVDA, SPY'),
-    period: z.enum(['1mo', '3mo', '6mo', '1y']).default('3mo').describe('Historical data range'),
+    symbol: z.string().trim().min(1).max(20).regex(/^[A-Z0-9.^=-]+$/i).describe('US stock ticker, e.g. AAPL, TSLA, NVDA, SPY'),
+    period: marketDataPeriodSchema.default('3mo').describe('Historical data range'),
   }),
   outputSchema: z.object({
     symbol: z.string(),
@@ -94,17 +177,5 @@ export const marketDataTool = createTool({
     klines: z.array(KLineDataSchema),
     dataPoints: z.number(),
   }),
-  execute: async ({ symbol, period }: { symbol: string; period: string }) => {
-    const upper = symbol.toUpperCase();
-    const klines = await fetchYahooChart(upper, period);
-    if (klines.length < 20) {
-      throw new Error(`Insufficient data for ${upper}: ${klines.length} bars (need >= 20)`);
-    }
-    return {
-      symbol: upper,
-      latestPrice: klines[klines.length - 1]!.close,
-      klines,
-      dataPoints: klines.length,
-    };
-  },
+  execute: async ({ symbol, period }) => getMarketData(symbol, period),
 });

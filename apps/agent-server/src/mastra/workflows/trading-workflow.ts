@@ -6,9 +6,54 @@ import {
   TradeSignalSchema,
   type KLineData,
   type Indicators,
+  type TradeSignal,
 } from '@trading-agent/shared';
-import { marketDataTool } from '../tools/market-data-tool';
-import { technicalAnalysisTool } from '../tools/technical-analysis-tool';
+import { getMarketData } from '../tools/market-data-tool';
+import { calculateIndicators } from '../tools/technical-analysis-tool';
+
+function round(value: number, digits: number): number {
+  return Number(value.toFixed(digits));
+}
+
+function normalizeIndicators(indicators: Indicators): Indicators {
+  return {
+    ma20: round(indicators.ma20, 2),
+    ma60: round(indicators.ma60, 2),
+    rsi: round(indicators.rsi, 2),
+    macd: round(indicators.macd, 4),
+    macdSignal: round(indicators.macdSignal, 4),
+    macdHistogram: round(indicators.macdHistogram, 4),
+  };
+}
+
+function deriveSignal(symbol: string, latestPrice: number, indicators: Indicators): TradeSignal {
+  const normalized = normalizeIndicators(indicators);
+  let action: TradeSignal['action'] = 'HOLD';
+  let reason = `当前 RSI=${normalized.rsi}，MA20=${normalized.ma20}，MA60=${normalized.ma60}，MACD 柱=${normalized.macdHistogram}，趋势信号不够一致，暂时维持观望。`;
+
+  if (normalized.rsi < 30 && normalized.macdHistogram > 0) {
+    action = 'BUY';
+    reason = `RSI=${normalized.rsi} 处于超卖区域，且 MACD 柱=${normalized.macdHistogram} 转为正值，多头动能改善，判断为买入信号。`;
+  } else if (normalized.rsi > 70 && normalized.macdHistogram < 0) {
+    action = 'SELL';
+    reason = `RSI=${normalized.rsi} 处于超买区域，且 MACD 柱=${normalized.macdHistogram} 转为负值，动能走弱，判断为卖出信号。`;
+  } else if (normalized.ma20 > normalized.ma60 && normalized.rsi >= 40 && normalized.rsi <= 60) {
+    action = 'BUY';
+    reason = `MA20=${normalized.ma20} 高于 MA60=${normalized.ma60}，中期趋势偏多，RSI=${normalized.rsi} 未过热，判断为买入信号。`;
+  } else if (normalized.ma20 < normalized.ma60 && normalized.rsi >= 40 && normalized.rsi <= 60) {
+    action = 'SELL';
+    reason = `MA20=${normalized.ma20} 低于 MA60=${normalized.ma60}，中期趋势偏弱，RSI=${normalized.rsi} 未明显超卖，判断为卖出信号。`;
+  }
+
+  return TradeSignalSchema.parse({
+    symbol,
+    action,
+    price: round(latestPrice, 2),
+    timestamp: Date.now(),
+    reason,
+    indicators: normalized,
+  });
+}
 
 // ── Step 1: 获取行情 K 线数据 ──────────────────────────────────────────
 const fetchMarketData = createStep({
@@ -24,7 +69,7 @@ const fetchMarketData = createStep({
   }),
   execute: async ({ inputData }) => {
     if (!inputData?.symbol) throw new Error('Symbol is required');
-    const result = await marketDataTool.execute({ symbol: inputData.symbol, period: '3mo' });
+    const result = await getMarketData(inputData.symbol, '3mo');
     return { symbol: result.symbol, latestPrice: result.latestPrice, klines: result.klines };
   },
 });
@@ -45,11 +90,11 @@ const computeIndicators = createStep({
   }),
   execute: async ({ inputData }) => {
     if (!inputData) throw new Error('Input data missing');
-    const indicators = await technicalAnalysisTool.execute({ klines: inputData.klines as KLineData[] });
+    const indicators = calculateIndicators(inputData.klines as KLineData[]);
     return {
       symbol: inputData.symbol,
       latestPrice: inputData.latestPrice,
-      indicators: indicators as Indicators,
+      indicators,
     };
   },
 });
@@ -67,36 +112,10 @@ const generateSignal = createStep({
     signal: TradeSignalSchema,
     summary: z.string(),
   }),
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData }) => {
     if (!inputData) throw new Error('Input data missing');
-    const agent = mastra?.getAgent('tradingAgent');
-    if (!agent) throw new Error('tradingAgent not found in Mastra instance');
-
     const { symbol, latestPrice, indicators } = inputData;
-    const prompt = `请对 ${symbol} 进行技术分析并给出交易信号。
-
-当前数据：
-- 最新收盘价：$${latestPrice.toFixed(2)}
-- MA20：${indicators.ma20.toFixed(2)}
-- MA60：${indicators.ma60.toFixed(2)}
-- RSI(14)：${indicators.rsi.toFixed(2)}
-- MACD：${indicators.macd.toFixed(4)}
-- MACD Signal：${indicators.macdSignal.toFixed(4)}
-- MACD Histogram：${indicators.macdHistogram.toFixed(4)}
-- 当前时间戳：${Date.now()}
-
-请按照你的分析规则，输出 JSON 格式的交易信号（包裹在 \`\`\`json 代码块中）。`;
-
-    const response = await agent.stream([{ role: 'user', content: prompt }]);
-    let text = '';
-    for await (const chunk of response.textStream) { text += chunk; }
-
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/(\{[\s\S]*"action"[\s\S]*\})/);
-    if (!jsonMatch?.[1]) {
-      throw new Error(`Agent did not return valid JSON. Response: ${text.slice(0, 300)}`);
-    }
-
-    const signal = TradeSignalSchema.parse(JSON.parse(jsonMatch[1]));
+    const signal = deriveSignal(symbol, latestPrice, indicators);
     return {
       signal,
       summary: `${symbol} 分析完成：${signal.action} @ $${signal.price.toFixed(2)}。${signal.reason}`,
