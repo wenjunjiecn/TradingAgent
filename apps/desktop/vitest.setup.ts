@@ -1,7 +1,7 @@
 import React from 'react';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 
-import { server } from './src/test/msw-server';
+import { server } from './src/renderer/test/msw-server';
 
 // @base-ui's ScrollArea (wrapped by playground-ui's ScrollArea) schedules a
 // deferred viewport measurement state update via requestAnimationFrame after

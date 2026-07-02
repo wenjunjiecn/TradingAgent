@@ -14,6 +14,8 @@ node_modules/
 
 # Build output
 dist/
+dist-electron/
+dist-app/
 .turbo/
 
 # Logs
@@ -25,4 +27,6 @@ dist/
 
 # Desktop client files
 apps/desktop/dist/
+apps/desktop/dist-electron/
+apps/desktop/dist-app/
 *.zip

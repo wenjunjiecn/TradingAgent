@@ -1,14 +1,23 @@
 {
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.electron.json"
+    },
+    {
+      "path": "./tsconfig.renderer.json"
+    },
+    {
+      "path": "./tsconfig.vite.json"
+    },
+    {
+      "path": "./tsconfig.vitest.json"
+    }
+  ],
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  },
-  "include": ["src/**/*"]
+    "paths": {
+      "@/*": ["./src/renderer/*"],
+      "@internal-temp/*": ["./src/renderer/vendor/@mastra/*"]
+    }
+  }
 }

@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 echo -e "${CYAN}=== Trading Agent 开发环境一键重启工具 ===${NC}"
 
 # 1. 清理已有的开发进程
-echo -e "${YELLOW}[1/3] 正在清理已有的旧进程 (Mastra, Studio, Electron, Nodemon)...${NC}"
+echo -e "${YELLOW}[1/3] 正在清理已有的旧进程 (Mastra, Renderer, Electron, Nodemon)...${NC}"
 pkill -f "mastra" 2>/dev/null
 pkill -f "vite" 2>/dev/null
 pkill -f "electron" 2>/dev/null

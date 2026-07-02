@@ -7,8 +7,12 @@ import kill from 'tree-kill';
 let mainWindow: BrowserWindow | null;
 const devProcesses: ChildProcess[] = [];
 const MASTRA_API_URL = 'http://localhost:4111';
-const STUDIO_URL = 'http://localhost:3000';
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+const RENDERER_DEV_URL = 'http://localhost:3000';
+const DESKTOP_ROOT = path.resolve(__dirname, '..', '..');
+const PROJECT_ROOT = path.resolve(DESKTOP_ROOT, '..', '..');
+const PRELOAD_PATH = path.join(__dirname, '..', 'preload', 'index.js');
+const RENDERER_ENTRY = path.join(DESKTOP_ROOT, 'dist', 'renderer', 'index.html');
+const LOADING_SCREEN = path.join(DESKTOP_ROOT, 'loading.html');
 
 function checkUrlReady(url: string, callback: (ready: boolean) => void) {
   const req = http.get(url, (res) => {
@@ -60,21 +64,37 @@ function startDevProcess(label: string, scriptName: string, env: NodeJS.ProcessE
   return childProcess;
 }
 
-function pollStudioAndLoad() {
+function loadRenderer() {
+  if (!mainWindow) {
+    return;
+  }
+
+  if (app.isPackaged) {
+    mainWindow.loadFile(RENDERER_ENTRY);
+    return;
+  }
+
+  mainWindow.loadURL(RENDERER_DEV_URL);
+}
+
+function pollRendererAndLoad() {
   const interval = setInterval(() => {
-    checkUrlReady(STUDIO_URL, (ready) => {
+    checkUrlReady(RENDERER_DEV_URL, (ready) => {
       if (ready) {
         clearInterval(interval);
-        console.log('Studio is ready! Loading application.');
-        if (mainWindow) {
-          mainWindow.loadURL(STUDIO_URL);
-        }
+        console.log('Renderer is ready! Loading application.');
+        loadRenderer();
       }
     });
   }, 1000);
 }
 
 function startMissingDevServices() {
+  if (app.isPackaged) {
+    loadRenderer();
+    return;
+  }
+
   checkUrlReady(MASTRA_API_URL, (apiRunning) => {
     if (apiRunning) {
       console.log('Mastra API already running.');
@@ -82,21 +102,19 @@ function startMissingDevServices() {
       startDevProcess('Mastra API', 'dev:agent', { PORT: '4111' });
     }
 
-    checkUrlReady(STUDIO_URL, (studioRunning) => {
-      if (studioRunning) {
-        console.log('Local Studio already running, connecting...');
-        if (mainWindow) {
-          mainWindow.loadURL(STUDIO_URL);
-        }
+    checkUrlReady(RENDERER_DEV_URL, (rendererRunning) => {
+      if (rendererRunning) {
+        console.log('Renderer dev server already running, connecting...');
+        loadRenderer();
         return;
       }
 
-      console.log('Local Studio not running. Starting Studio and loading splash screen...');
+      console.log('Renderer dev server not running. Starting Vite and loading splash screen...');
       if (mainWindow) {
-        mainWindow.loadFile(path.join(__dirname, '..', 'loading.html'));
+        mainWindow.loadFile(LOADING_SCREEN);
       }
-      startDevProcess('Studio', 'dev:studio', { MASTRA_SERVER_HOST: '127.0.0.1', MASTRA_SERVER_PORT: '4111' });
-      pollStudioAndLoad();
+      startDevProcess('Renderer', 'dev:renderer', { MASTRA_SERVER_HOST: '127.0.0.1', MASTRA_SERVER_PORT: '4111' });
+      pollRendererAndLoad();
     });
   });
 }
@@ -109,8 +127,10 @@ function createWindow() {
     show: false, // Don't show until ready-to-show
     titleBarStyle: 'hidden',
     webPreferences: {
+      preload: PRELOAD_PATH,
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
     },
   });
 
@@ -122,7 +142,7 @@ function createWindow() {
 
   startMissingDevServices();
 
-  // Inject shell-only CSS on dom-ready. UI text is owned by apps/studio source.
+  // Inject shell-only CSS on dom-ready. UI text is owned by the renderer.
   mainWindow.webContents.on('dom-ready', () => {
     if (mainWindow) {
       console.log('DOM ready event fired, injecting Electron shell styles...');

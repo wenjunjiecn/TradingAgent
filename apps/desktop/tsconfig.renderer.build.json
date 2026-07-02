@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.renderer.json",
+  "exclude": ["src/renderer/**/*.stories.*", "src/renderer/**/__tests__/**"]
+}

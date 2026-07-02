@@ -9,10 +9,12 @@
   ],
   "scripts": {
     "dev:agent": "npm run dev -w agent-server",
-    "dev:studio": "npm run build -w @mastra/playground-ui && npm run dev -w @trading-agent/studio",
+    "dev:renderer": "npm run build -w @mastra/playground-ui && npm run dev:renderer -w trading-agent",
+    "dev:studio": "npm run dev:renderer",
     "dev:desktop": "npm run dev -w trading-agent",
     "dev": "npm run start -w trading-agent",
     "start": "npm run start -w trading-agent",
+    "build:desktop": "npm run build -w trading-agent",
     "restart": "./restart-dev.sh"
   },
   "devDependencies": {

@@ -205,7 +205,7 @@ const routesManifestPlugin = (): Plugin => {
     async writeBundle() {
       const root = resolvedConfig?.root ?? __dirname;
       const outDir = path.resolve(root, resolvedConfig?.build?.outDir ?? 'dist');
-      const sourcePath = path.resolve(root, 'src', 'App.tsx');
+      const sourcePath = path.resolve(root, 'src', 'renderer', 'App.tsx');
       const outputPath = path.join(outDir, 'routes-manifest.json');
       const manifest = JSON.stringify(await collectRouteRoots(sourcePath), null, 2) + '\n';
 
@@ -225,11 +225,12 @@ export default defineConfig(({ mode }) => {
     resolve: {
       dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react-resizable-panels', '@tanstack/react-query'],
       alias: {
-        '@': path.resolve(__dirname, './src'),
-        '@internal-temp': path.resolve(__dirname, './src/vendor/@mastra'),
+        '@': path.resolve(__dirname, './src/renderer'),
+        '@internal-temp': path.resolve(__dirname, './src/renderer/vendor/@mastra'),
       },
     },
     build: {
+      outDir: 'dist/renderer',
       cssCodeSplit: false,
     },
     server: {

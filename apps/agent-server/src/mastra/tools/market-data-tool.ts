@@ -1,6 +1,10 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { KLineDataSchema, type KLineData } from '@trading-agent/shared';
+
+const execFileAsync = promisify(execFile);
 
 interface YahooChartResponse {
   chart: {
@@ -21,19 +25,42 @@ interface YahooChartResponse {
   };
 }
 
+async function fetchYahooChartJson(url: string, symbol: string): Promise<YahooChartResponse> {
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9',
+  };
+
+  const response = await fetch(url, { headers });
+  if (response.ok) {
+    return (await response.json()) as YahooChartResponse;
+  }
+
+  try {
+    const { stdout } = await execFileAsync('curl', [
+      '-fsSL',
+      '--max-time',
+      '20',
+      '-H',
+      `User-Agent: ${headers['User-Agent']}`,
+      '-H',
+      `Accept: ${headers.Accept}`,
+      '-H',
+      `Accept-Language: ${headers['Accept-Language']}`,
+      url,
+    ], { maxBuffer: 10 * 1024 * 1024 });
+
+    return JSON.parse(stdout) as YahooChartResponse;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Yahoo Finance API error: HTTP ${response.status} for ${symbol}; curl fallback failed: ${message}`);
+  }
+}
+
 async function fetchYahooChart(symbol: string, range: string): Promise<KLineData[]> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=1d&includePrePost=false`;
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-      'Accept': 'application/json',
-      'Accept-Language': 'en-US,en;q=0.9',
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`Yahoo Finance API error: HTTP ${response.status} for ${symbol}`);
-  }
-  const data = (await response.json()) as YahooChartResponse;
+  const data = await fetchYahooChartJson(url, symbol);
   if (data.chart.error) {
     throw new Error(`Yahoo Finance error: ${data.chart.error.description}`);
   }
