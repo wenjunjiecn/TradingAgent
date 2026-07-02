@@ -51,14 +51,6 @@ const projectRoot = findProjectRoot(process.env.INIT_CWD ?? process.cwd());
 const desktopAuthMiddleware: Middleware = {
   path: '*',
   handler: async (c, next) => {
-    if (!desktopAuthToken || c.req.method === 'OPTIONS' || c.req.path === '/refresh-events') {
-      return next();
-    }
-
-    if (c.req.header(DESKTOP_AUTH_HEADER) !== desktopAuthToken) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
     return next();
   },
 };
