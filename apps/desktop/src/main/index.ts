@@ -1,18 +1,26 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 import { spawn, ChildProcess } from 'child_process';
 import * as http from 'http';
 import kill from 'tree-kill';
 
 let mainWindow: BrowserWindow | null;
 const devProcesses: ChildProcess[] = [];
-const MASTRA_API_URL = 'http://localhost:4111';
+const MASTRA_SERVER_HOST = '127.0.0.1';
+const MASTRA_SERVER_PORT = process.env.MASTRA_SERVER_PORT || process.env.PORT || '4111';
+const MASTRA_API_URL = `http://${MASTRA_SERVER_HOST}:${MASTRA_SERVER_PORT}`;
+const MASTRA_AGENTS_URL = `${MASTRA_API_URL}/api/agents`;
 const RENDERER_DEV_URL = 'http://localhost:3000';
 const DESKTOP_ROOT = path.resolve(__dirname, '..', '..');
 const PROJECT_ROOT = path.resolve(DESKTOP_ROOT, '..', '..');
 const PRELOAD_PATH = path.join(__dirname, '..', 'preload', 'index.js');
 const RENDERER_ENTRY = path.join(DESKTOP_ROOT, 'dist', 'renderer', 'index.html');
 const LOADING_SCREEN = path.join(DESKTOP_ROOT, 'loading.html');
+const EMBEDDED_SERVER_DIR = app.isPackaged
+  ? path.join(process.resourcesPath, 'agent-server')
+  : path.join(PROJECT_ROOT, 'apps', 'agent-server', '.mastra', 'output');
+const EMBEDDED_SERVER_ENTRY = path.join(EMBEDDED_SERVER_DIR, 'index.mjs');
 
 function checkUrlReady(url: string, callback: (ready: boolean) => void) {
   const req = http.get(url, (res) => {
@@ -28,6 +36,79 @@ function checkUrlReady(url: string, callback: (ready: boolean) => void) {
   });
 
   req.end();
+}
+
+function waitForUrlReady(url: string, timeoutMs: number): Promise<void> {
+  const startedAt = Date.now();
+
+  return new Promise((resolve, reject) => {
+    const poll = () => {
+      checkUrlReady(url, (ready) => {
+        if (ready) {
+          resolve();
+          return;
+        }
+
+        if (Date.now() - startedAt >= timeoutMs) {
+          reject(new Error(`Timed out waiting for ${url}`));
+          return;
+        }
+
+        setTimeout(poll, 500);
+      });
+    };
+
+    poll();
+  });
+}
+
+function checkTradingAgentReady(callback: (ready: boolean) => void) {
+  const req = http.get(MASTRA_AGENTS_URL, (res) => {
+    if (res.statusCode !== 200) {
+      res.resume();
+      callback(false);
+      return;
+    }
+
+    let body = '';
+    res.setEncoding('utf8');
+    res.on('data', (chunk) => {
+      body += chunk;
+    });
+    res.on('end', () => {
+      callback(body.includes('"trading-agent"'));
+    });
+  });
+
+  req.on('error', () => {
+    callback(false);
+  });
+
+  req.end();
+}
+
+function waitForTradingAgentReady(timeoutMs: number): Promise<void> {
+  const startedAt = Date.now();
+
+  return new Promise((resolve, reject) => {
+    const poll = () => {
+      checkTradingAgentReady((ready) => {
+        if (ready) {
+          resolve();
+          return;
+        }
+
+        if (Date.now() - startedAt >= timeoutMs) {
+          reject(new Error(`Timed out waiting for embedded Trading Agent at ${MASTRA_AGENTS_URL}`));
+          return;
+        }
+
+        setTimeout(poll, 500);
+      });
+    };
+
+    poll();
+  });
 }
 
 function startDevProcess(label: string, scriptName: string, env: NodeJS.ProcessEnv = {}) {
@@ -64,6 +145,55 @@ function startDevProcess(label: string, scriptName: string, env: NodeJS.ProcessE
   return childProcess;
 }
 
+function startEmbeddedAgentServer() {
+  if (!fs.existsSync(EMBEDDED_SERVER_ENTRY)) {
+    throw new Error(`Embedded Mastra server entry not found: ${EMBEDDED_SERVER_ENTRY}`);
+  }
+
+  const serverDataDir = path.join(app.getPath('userData'), 'agent-server');
+  fs.mkdirSync(serverDataDir, { recursive: true });
+
+  console.log('Starting embedded Mastra API from:', EMBEDDED_SERVER_ENTRY);
+
+  const childProcess = spawn(process.execPath, [EMBEDDED_SERVER_ENTRY], {
+    cwd: serverDataDir,
+    shell: false,
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      NODE_ENV: 'production',
+      HOST: MASTRA_SERVER_HOST,
+      PORT: MASTRA_SERVER_PORT,
+      MASTRA_SERVER_HOST,
+      MASTRA_SERVER_PORT,
+    },
+  });
+
+  devProcesses.push(childProcess);
+
+  if (childProcess.stdout) {
+    childProcess.stdout.on('data', (data) => {
+      console.log(`[Embedded Mastra API Out]: ${data}`);
+    });
+  }
+
+  if (childProcess.stderr) {
+    childProcess.stderr.on('data', (data) => {
+      console.error(`[Embedded Mastra API Err]: ${data}`);
+    });
+  }
+
+  childProcess.on('close', (code) => {
+    console.log(`Embedded Mastra API process exited with code ${code}`);
+    const index = devProcesses.indexOf(childProcess);
+    if (index >= 0) {
+      devProcesses.splice(index, 1);
+    }
+  });
+
+  return childProcess;
+}
+
 function loadRenderer() {
   if (!mainWindow) {
     return;
@@ -91,7 +221,67 @@ function pollRendererAndLoad() {
 
 function startMissingDevServices() {
   if (app.isPackaged) {
-    loadRenderer();
+    if (mainWindow) {
+      mainWindow.loadFile(LOADING_SCREEN);
+    }
+
+    waitForTradingAgentReady(1000)
+      .catch(() => {
+        startEmbeddedAgentServer();
+        return waitForTradingAgentReady(60000);
+      })
+      .then(() => {
+        console.log('Embedded Mastra API is ready. Loading application.');
+        loadRenderer();
+      })
+      .catch((error) => {
+        console.error('Failed to start embedded Mastra API:', error);
+        if (mainWindow) {
+          const message = error instanceof Error ? error.message : String(error);
+          mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+            <!doctype html>
+            <html>
+              <head>
+                <meta charset="UTF-8" />
+                <title>Trading Agent Startup Error</title>
+                <style>
+                  body {
+                    margin: 0;
+                    height: 100vh;
+                    display: grid;
+                    place-items: center;
+                    background: #101113;
+                    color: #f4f4f5;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                  }
+                  main {
+                    width: min(560px, calc(100vw - 48px));
+                    line-height: 1.5;
+                  }
+                  h1 {
+                    font-size: 20px;
+                    margin: 0 0 12px;
+                  }
+                  pre {
+                    overflow: auto;
+                    border: 1px solid #303236;
+                    border-radius: 8px;
+                    padding: 12px;
+                    background: #181a1f;
+                    color: #d4d4d8;
+                  }
+                </style>
+              </head>
+              <body>
+                <main>
+                  <h1>Trading Agent failed to start</h1>
+                  <pre>${message.replace(/[<>&]/g, char => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[char] ?? char)}</pre>
+                </main>
+              </body>
+            </html>
+          `)}`);
+        }
+      });
     return;
   }
 
@@ -99,7 +289,7 @@ function startMissingDevServices() {
     if (apiRunning) {
       console.log('Mastra API already running.');
     } else {
-      startDevProcess('Mastra API', 'dev:agent', { PORT: '4111' });
+      startDevProcess('Mastra API', 'dev:agent', { HOST: MASTRA_SERVER_HOST, PORT: MASTRA_SERVER_PORT });
     }
 
     checkUrlReady(RENDERER_DEV_URL, (rendererRunning) => {
@@ -113,7 +303,7 @@ function startMissingDevServices() {
       if (mainWindow) {
         mainWindow.loadFile(LOADING_SCREEN);
       }
-      startDevProcess('Renderer', 'dev:renderer', { MASTRA_SERVER_HOST: '127.0.0.1', MASTRA_SERVER_PORT: '4111' });
+      startDevProcess('Renderer', 'dev:renderer', { MASTRA_SERVER_HOST, MASTRA_SERVER_PORT });
       pollRendererAndLoad();
     });
   });

@@ -5,7 +5,8 @@ import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
 import { MastraCompositeStore } from '@mastra/core/storage';
-import { LocalFilesystem, Workspace } from '@mastra/core/workspace';
+import { LocalSkillSource, Workspace } from '@mastra/core/workspace';
+import { MastraEditor } from '@mastra/editor';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
 import { tradingAgent } from './agents/trading-agent';
 import { tradingMcpServer } from './mcps/trading-mcp-server';
@@ -41,46 +42,42 @@ const projectRoot = findProjectRoot(process.env.INIT_CWD ?? process.cwd());
 const workspace = new Workspace({
   id: 'trading-agent-workspace',
   name: 'Trading Agent Workspace',
-  filesystem: new LocalFilesystem({
-    id: 'trading-agent-files',
-    basePath: projectRoot,
-    contained: true,
-  }),
-  bm25: {
-    tokenize: {
-      removePunctuation: false,
-      minLength: 1,
-    },
-  },
-  autoIndexPaths: [
-    'docs',
-    'apps/agent-server/src/mastra/agents',
-    'apps/agent-server/src/mastra/tools',
-    'apps/agent-server/src/mastra/workflows',
-    'packages/shared/src',
-    'skills',
-  ],
   skills: ['skills'],
+  skillSource: new LocalSkillSource({ basePath: projectRoot }),
   checkSkillFileMtime: process.env.NODE_ENV !== 'production',
 });
 
 await workspace.init();
+
+const storage = new MastraCompositeStore({
+  id: 'composite-storage',
+  default: new LibSQLStore({
+    id: 'mastra-storage',
+    url: 'file:./mastra.db',
+  }),
+  editor: new LibSQLStore({
+    id: 'mastra-editor-storage',
+    url: 'file:./mastra.db',
+  }),
+});
 
 export const mastra = new Mastra({
   workflows: { tradingWorkflow },
   agents: { tradingAgent },
   mcpServers: { tradingMcpServer },
   workspace,
-  storage: new MastraCompositeStore({
-    id: 'composite-storage',
-    default: new LibSQLStore({
-      id: "mastra-storage",
-      url: "file:./mastra.db",
-    }),
+  storage,
+  editor: new MastraEditor({
+    source: 'db',
   }),
   server: {
     cors: {
-      origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+      origin: [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'file://',
+        'null',
+      ],
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization', 'x-mastra-client-type'],
       credentials: true

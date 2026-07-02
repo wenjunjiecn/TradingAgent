@@ -8,7 +8,8 @@
     "dev": "npm run build:electron && electron .",
     "start": "npm run dev",
     "dev:renderer": "vite --host 127.0.0.1 --port 3000",
-    "build": "npm run build:renderer && npm run build:electron",
+    "build": "npm run build:agent && npm run build:renderer && npm run build:electron",
+    "build:agent": "npm run build -w agent-server",
     "build:renderer": "vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build:watch": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
@@ -16,8 +17,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "preview": "vite preview --host 127.0.0.1 --port 3000",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --mac"
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder --mac"
   },
   "dependencies": {
     "@autoform/core": "^3.0.0",
@@ -106,13 +107,29 @@
   "build": {
     "appId": "com.tradingagent.app",
     "productName": "Trading Agent",
+    "electronVersion": "31.0.0",
     "mac": {
       "category": "public.app-category.developer-tools",
+      "identity": null,
       "target": [
         "dmg",
         "zip"
       ]
     },
+    "extraResources": [
+      {
+        "from": "../agent-server/.mastra/output",
+        "to": "agent-server",
+        "filter": [
+          "**/*",
+          "!**/*.db",
+          "!**/*.db-shm",
+          "!**/*.db-wal",
+          "!**/*.duckdb",
+          "!**/*.duckdb.wal"
+        ]
+      }
+    ],
     "directories": {
       "output": "dist-app"
     }

@@ -56,7 +56,19 @@
 
         function connectSSE() {
           const basePath = window.MASTRA_STUDIO_BASE_PATH || '';
-          currentEvents = new EventSource(`${basePath}/refresh-events`);
+          const eventsUrl =
+            window.location.protocol === 'file:'
+              ? `${window.MASTRA_SERVER_PROTOCOL || 'http'}://${window.MASTRA_SERVER_HOST || '127.0.0.1'}:${window.MASTRA_SERVER_PORT || '4111'}/refresh-events`
+              : `${basePath}/refresh-events`;
+
+          try {
+            currentEvents = new EventSource(eventsUrl);
+          } catch {
+            const delay = getRetryDelay();
+            retryCount++;
+            setTimeout(connectSSE, delay);
+            return;
+          }
 
           currentEvents.onopen = () => {
             // Reset retry count on successful connection

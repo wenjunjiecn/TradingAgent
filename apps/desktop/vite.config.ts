@@ -7,7 +7,7 @@ import ts from 'typescript';
 import type { Plugin, PluginOption, UserConfig } from 'vite';
 import { defineConfig } from 'vite';
 
-const studioStandalonePlugin = (targetPort: string, targetHost: string): PluginOption => ({
+const studioStandalonePlugin = (targetPort: string, targetHost: string, autoDetectUrl: string): PluginOption => ({
   name: 'studio-standalone-plugin',
   transformIndexHtml(html: string) {
     return html
@@ -19,7 +19,7 @@ const studioStandalonePlugin = (targetPort: string, targetHost: string): PluginO
       .replace(/%%MASTRA_STUDIO_BASE_PATH%%/g, '')
       .replace(/%%MASTRA_SERVER_PROTOCOL%%/g, 'http')
       .replace(/%%MASTRA_CLOUD_API_ENDPOINT%%/g, '')
-      .replace(/%%MASTRA_AUTO_DETECT_URL%%/g, 'true')
+      .replace(/%%MASTRA_AUTO_DETECT_URL%%/g, autoDetectUrl)
       .replace(/%%MASTRA_TEMPLATES%%/g, '')
       .replace(/%%MASTRA_REQUEST_CONTEXT_PRESETS%%/g, '')
       .replace(/%%MASTRA_EXPERIMENTAL_FEATURES%%/g, process.env.EXPERIMENTAL_FEATURES || 'false')
@@ -218,9 +218,16 @@ const routesManifestPlugin = (): Plugin => {
 export default defineConfig(({ mode }) => {
   const targetPort = process.env.MASTRA_SERVER_PORT || '4111';
   const targetHost = process.env.MASTRA_SERVER_HOST || '127.0.0.1';
+  const autoDetectUrl = process.env.MASTRA_AUTO_DETECT_URL ?? (mode === 'development' ? 'true' : 'false');
 
   const commonConfig: UserConfig = {
-    plugins: [stubNodeBuiltinsPlugin, tailwindcss(), react(), routesManifestPlugin(), studioStandalonePlugin(targetPort, targetHost)],
+    plugins: [
+      stubNodeBuiltinsPlugin,
+      tailwindcss(),
+      react(),
+      routesManifestPlugin(),
+      studioStandalonePlugin(targetPort, targetHost, autoDetectUrl),
+    ],
     base: './',
     resolve: {
       dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react-resizable-panels', '@tanstack/react-query'],
