@@ -6,8 +6,10 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
+    "build:watch": "tsc --watch --preserveWatchOutput",
     "prestart": "npm run build",
     "start": "electron .",
+    "dev": "concurrently --kill-others \"npm run build:watch\" \"nodemon --watch dist --ext js --delay 500ms --exec 'electron .'\"",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --mac"
   },
@@ -17,8 +19,10 @@
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "concurrently": "^8.2.2",
     "electron": "^31.0.0",
     "electron-builder": "^24.13.3",
+    "nodemon": "^3.1.14",
     "typescript": "^5.4.5"
   },
   "build": {
@@ -26,7 +30,10 @@
     "productName": "Trading Agent",
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": ["dmg", "zip"]
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "directories": {
       "output": "dist-app"

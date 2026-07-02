@@ -9,8 +9,9 @@
   ],
   "scripts": {
     "dev:agent": "npm run dev -w agent-server",
-    "dev:desktop": "npm run start -w trading-agent",
-    "dev": "npm run dev:desktop"
+    "dev:desktop": "npm run dev -w trading-agent",
+    "dev": "concurrently --kill-others --names \"AGENT,DESKTOP\" --prefix-colors \"cyan,magenta\" \"npm run dev:agent\" \"npm run dev:desktop\"",
+    "start": "npm run start -w trading-agent"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
