@@ -12,11 +12,7 @@ export interface UseCanCreateAgentResult {
 export const useCanCreateAgent = (): UseCanCreateAgentResult => {
   const { canAccessAgentBuilder, isLoading } = useBuilderAgentAccess();
 
-  const hasEnvFlag =
-    typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).MASTRA_EXPERIMENTAL_UI === 'true';
-
-  const canCreateAgent = hasEnvFlag || canAccessAgentBuilder;
   const createRoute = canAccessAgentBuilder ? BUILDER_AGENT_CREATE_ROUTE : CMS_AGENT_CREATE_ROUTE;
 
-  return { canCreateAgent, createRoute, isLoading };
+  return { canCreateAgent: true, createRoute, isLoading };
 };

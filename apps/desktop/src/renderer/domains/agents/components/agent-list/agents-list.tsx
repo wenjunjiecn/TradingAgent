@@ -1,4 +1,6 @@
 import type { GetAgentResponse } from '@mastra/client-js';
+import { Button } from '@mastra/playground-ui/components/Button';
+import { DropdownMenu } from '@mastra/playground-ui/components/DropdownMenu';
 import { truncateString } from '@mastra/playground-ui/utils/truncate-string';
 import {
   ArrowRight,
@@ -9,13 +11,17 @@ import {
   Clock3,
   Database,
   Gauge,
+  MoreVertical,
   Newspaper,
+  Pencil,
   ShieldAlert,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import type { ElementType } from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { extractPrompt } from '../../utils/extractPrompt';
+import { DeleteAgentDialog } from '../delete-agent-dialog';
 import { ProviderLogo } from '../agent-metadata/provider-logo';
 import { useLinkComponent } from '@/lib/framework';
 import { cn } from '@/lib/utils';
@@ -148,6 +154,7 @@ function AgentCapability({
 
 export function AgentsList({ agents, isLoading, search = '' }: AgentsListProps) {
   const { paths, Link } = useLinkComponent();
+  const [deleteAgent, setDeleteAgent] = useState<{ id: string; name: string } | null>(null);
 
   const agentData = useMemo(() => Object.values(agents ?? {}), [agents]);
 
@@ -205,6 +212,7 @@ export function AgentsList({ agents, isLoading, search = '' }: AgentsListProps) 
         const focusItems = role.focus.length > 0 ? role.focus.slice(0, 3) : ['研究判断', '风险提示', '下一步问题'];
         const badgeItems = role.badges.length > 0 ? role.badges.slice(0, 3) : ['Agent', 'Research'];
         const Icon = visual.Icon;
+        const isStoredAgent = agent.source === 'stored';
 
         return (
           <Link
@@ -235,7 +243,57 @@ export function AgentsList({ agents, isLoading, search = '' }: AgentsListProps) 
                       <h2 className="truncate text-base font-semibold leading-6 text-neutral6">{agent.name}</h2>
                       <p className="mt-0.5 truncate text-xs leading-5 text-neutral3">{role.role}</p>
                     </div>
-                    <ArrowRight className="mt-1 size-4 shrink-0 text-neutral3 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-neutral6" />
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+                      {isStoredAgent && (
+                        <DropdownMenu>
+                          <DropdownMenu.Trigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={e => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              className="h-8 w-8 text-neutral3 hover:text-neutral6 hover:bg-surface5"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Content
+                            align="end"
+                            onClick={e => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                          >
+                            <DropdownMenu.Item asChild>
+                              <Link
+                                href={paths.cmsAgentEditLink(agent.id)}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                }}
+                                className="flex items-center w-full px-2 py-1.5 text-sm"
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                <span>Edit</span>
+                              </Link>
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              className="text-red-500 focus:text-red-400 flex items-center px-2 py-1.5 text-sm cursor-pointer"
+                              onSelect={e => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDeleteAgent({ id: agent.id, name: agent.name });
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete</span>
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
+                        </DropdownMenu>
+                      )}
+                      <ArrowRight className="size-4 text-neutral3 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-neutral6" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -281,6 +339,15 @@ export function AgentsList({ agents, isLoading, search = '' }: AgentsListProps) 
           </Link>
         );
       })}
+      {deleteAgent && (
+        <DeleteAgentDialog
+          open={!!deleteAgent}
+          onOpenChange={open => !open && setDeleteAgent(null)}
+          agentId={deleteAgent.id}
+          agentName={deleteAgent.name}
+          onSuccess={() => setDeleteAgent(null)}
+        />
+      )}
     </div>
   );
 }

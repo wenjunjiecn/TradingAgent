@@ -2,11 +2,13 @@ import { Button } from '@mastra/playground-ui/components/Button';
 import { TooltipProvider } from '@mastra/playground-ui/components/Tooltip';
 import { useCopyToClipboard } from '@mastra/playground-ui/hooks/use-copy-to-clipboard';
 import { Icon } from '@mastra/playground-ui/icons/Icon';
-import { Check, Link as LinkIcon, Pencil, SlidersHorizontal, X } from 'lucide-react';
+import { Check, Link as LinkIcon, Pencil, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 import { useAgent } from '../hooks/use-agent';
 import { AgentEntityHeader } from './agent-entity-header';
+import { DeleteAgentDialog } from './delete-agent-dialog';
 import { useCanCreateAgent } from '@/domains/agent-builder/hooks/use-can-create-agent';
 import { useLinkComponent } from '@/lib/framework';
 
@@ -28,6 +30,8 @@ export function AgentViewHeader({ agentId, view }: AgentViewHeaderProps) {
     text: sessionUrl,
     copyMessage: 'Session URL copied to clipboard!',
   });
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const isStoredAgent = agent?.source === 'stored';
   const editPath = paths.cmsAgentEditLink(agentId);
@@ -57,12 +61,25 @@ export function AgentViewHeader({ agentId, view }: AgentViewHeaderProps) {
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {showEditButton && (
-            <Button variant="outline" size="sm" as={FrameworkLink} to={editPath}>
-              <Icon size="sm">
-                <Pencil />
-              </Icon>
-              Edit
-            </Button>
+            <>
+              <Button variant="outline" size="sm" as={FrameworkLink} to={editPath}>
+                <Icon size="sm">
+                  <Pencil />
+                </Icon>
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="text-red-500 hover:text-red-400 hover:bg-red-500/10 border-red-500/30 hover:border-red-500/50"
+              >
+                <Icon size="sm">
+                  <Trash2 />
+                </Icon>
+                Delete
+              </Button>
+            </>
           )}
           <Button
             variant="default"
@@ -90,6 +107,12 @@ export function AgentViewHeader({ agentId, view }: AgentViewHeaderProps) {
           </Button>
         </div>
       </div>
+      <DeleteAgentDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        agentId={agentId}
+        agentName={agent?.name || ''}
+      />
     </TooltipProvider>
   );
 }

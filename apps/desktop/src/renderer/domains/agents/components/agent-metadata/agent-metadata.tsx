@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import type { GetToolResponse, GetWorkflowResponse } from '@mastra/client-js';
 import { Badge } from '@mastra/playground-ui/components/Badge';
+import { Button } from '@mastra/playground-ui/components/Button';
 import { codeLanguages, useCodemirrorTheme } from '@mastra/playground-ui/components/CodeEditor';
 import { Notice } from '@mastra/playground-ui/components/Notice';
 import { Skeleton } from '@mastra/playground-ui/components/Skeleton';
@@ -15,6 +17,7 @@ import { GaugeIcon, Folder, Globe } from 'lucide-react';
 import { useActivatedSkills } from '../../context/activated-skills-context';
 import { useAgent } from '../../hooks/use-agent';
 import { useReorderModelList, useUpdateModelInModelList } from '../../hooks/use-agents';
+import { DeleteAgentDialog } from '../delete-agent-dialog';
 import { extractPrompt } from '../../utils/extractPrompt';
 import { AgentMetadataList, AgentMetadataListEmpty, AgentMetadataListItem } from './agent-metadata-list';
 import { AgentMetadataModelList } from './agent-metadata-model-list';
@@ -60,6 +63,7 @@ export const AgentMetadata = ({ agentId }: AgentMetadataProps) => {
   const { data: agent, isLoading } = useAgent(agentId);
   const { mutate: reorderModelList } = useReorderModelList(agentId);
   const { mutateAsync: updateModelInModelList } = useUpdateModelInModelList(agentId);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const codemirrorTheme = useCodemirrorTheme();
   const { isCmsAvailable, isLoading: isCmsLoading } = useIsCmsAvailable();
 
@@ -211,6 +215,30 @@ export const AgentMetadata = ({ agentId }: AgentMetadataProps) => {
           </Notice>
         )}
       </AgentMetadataSection>
+
+      {agent.source === 'stored' && (
+        <AgentMetadataSection title="Danger Zone">
+          <div className="border border-red-500/20 rounded-md p-4 bg-red-500/5">
+            <h4 className="text-sm font-semibold text-red-500 mb-1">Delete Agent</h4>
+            <p className="text-xs text-neutral4 mb-3">
+              Once deleted, this agent and all its conversation history will be permanently removed.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="text-red-500 hover:text-red-400 hover:bg-red-500/10 border-red-500/30 hover:border-red-500/50"
+            >
+              Delete agent
+            </Button>
+          </div>
+          <DeleteAgentDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            agentId={agentId}
+            agentName={agent.name}
+          />
+        </AgentMetadataSection>
+      )}
     </AgentMetadataWrapper>
   );
 };
