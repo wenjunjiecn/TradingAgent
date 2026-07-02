@@ -75,6 +75,7 @@ function createWindow() {
     height: 900,
     title: 'Trading Agent',
     show: false, // Don't show until ready-to-show
+    titleBarStyle: 'hidden',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -104,10 +105,26 @@ function createWindow() {
     }
   });
 
-  // Inject Chinese translations on dom-ready
+  // Inject Chinese translations and custom CSS on dom-ready
   mainWindow.webContents.on('dom-ready', () => {
     if (mainWindow) {
-      console.log('DOM ready event fired, injecting translation script...');
+      console.log('DOM ready event fired, injecting custom styles and translation script...');
+      
+      // Inject CSS to add top padding for macOS traffic lights and make the region draggable
+      const customStyles = `
+        .sidebar-layout {
+          padding-top: 36px !important;
+          -webkit-app-region: drag !important;
+        }
+        .sidebar-layout > * {
+          -webkit-app-region: no-drag !important;
+        }
+      `;
+      
+      mainWindow.webContents.insertCSS(customStyles)
+        .then(() => console.log('Custom CSS successfully injected!'))
+        .catch(err => console.error('Failed to inject CSS:', err));
+
       mainWindow.webContents.executeJavaScript(translateScript)
         .then(() => console.log('Translation script successfully injected!'))
         .catch(err => console.error('Failed to inject translation script:', err));
