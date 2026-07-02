@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "mastra dev",
+    "dev": "concurrently \"mastra dev\" \"npx mastra studio\"",
     "build": "mastra build",
     "start": "mastra start"
   },
@@ -19,6 +19,9 @@
     "@mastra/observability": "^1.15.2",
     "@trading-agent/shared": "*",
     "mastra": "^1.17.0",
-    "zod": "^4.4.3"
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
