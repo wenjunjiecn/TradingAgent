@@ -241,11 +241,36 @@ const translateScript = `
         'Create a prompt': '创建提示词',
         'No datasets found': '未找到数据集',
         'Create a dataset': '创建数据集',
-        'No tools found': '未找到工具',
-        'Create a tool': '创建工具',
         'Agent Settings': '智能体设置',
         'Model Settings': '模型设置',
-        'Parameters': '参数'
+        'Parameters': '参数',
+        
+        // Memory & Advanced Agent features
+        'Semantic Recall': '语义检索记忆',
+        'Semantic recall': '语义检索记忆',
+        'Working Memory': '当前工作记忆',
+        'Working memory': '当前工作记忆',
+        'Semantic recall is not enabled for this agent. Enable it to search through conversation history.': '当前智能体未开启语义检索。开启后可搜索历史会话记录。',
+        'Working memory is not enabled for this agent. Enable it to maintain context across conversations.': '当前智能体未开启工作记忆。开启后可在不同会话间保持上下文。',
+        'Learn about semantic recall': '了解语义检索记忆',
+        'Learn about working memory': '了解工作记忆',
+        'recent messages': '最近消息',
+        
+        // Actions & Statuses
+        'Clone Thread': '克隆当前会话',
+        'Create a copy of this conversation': '创建此会话的副本',
+        'Clone': '克隆',
+        'Cloning...': '克隆中...',
+        'Failed to clone thread': '克隆会话失败',
+        'Idle': '空闲中',
+        'No URL': '暂无连接 URL',
+        'recent': '最近',
+        
+        // Workflows layout
+        'Schedules': '调度计划 (Schedules)',
+        'Number of steps': '步骤数量',
+        'Number of Steps': '步骤数量',
+        'Step': '步骤'
       };
 
       function translateText(text) {
