@@ -9,7 +9,7 @@
     "build:watch": "tsc --watch --preserveWatchOutput",
     "prestart": "npm run build",
     "start": "electron .",
-    "dev": "concurrently --kill-others \"npm run build:watch\" \"nodemon --watch dist --ext js --delay 500ms --exec 'electron .'\"",
+    "dev": "npm run start",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --mac"
   },
