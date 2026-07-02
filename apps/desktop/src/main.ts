@@ -165,12 +165,69 @@ const translateScript = `
       'Search': '全局搜索 (Search)',
       'Primitives': '基础组件',
       'Evaluation': '模型评估',
-      'Observability': '可观测性'
+      'Observability': '可观测性',
+      
+      // Top bar & buttons
+      'Agents documentation': '智能体文档',
+      'Workflows documentation': '工作流文档',
+      'Prompts documentation': '提示词文档',
+      'Tools documentation': '工具文档',
+      'Datasets documentation': '数据集文档',
+      'System settings': '系统设置',
+      
+      // Tabs
+      'Chat': '对话',
+      'Editor': '编辑器',
+      'Evaluate': '评估',
+      'Review': '评审',
+      
+      // Chat area
+      'Memory': '记忆 (Context)',
+      'New Chat': '新建会话',
+      'Your conversations will appear here once you start chatting!': '开始对话后，您的历史会话将显示在这里！',
+      'How can I help you today?': '今天我能帮您做点什么？',
+      'Enter your message...': '请输入消息...',
+      
+      // Common UI Actions & Labels
+      'Search...': '搜索...',
+      'Search': '搜索',
+      'Variables': '变量',
+      'Input': '输入',
+      'Output': '输出',
+      'Steps': '步骤',
+      'Trigger': '触发器',
+      'Execute': '执行',
+      'Run': '运行',
+      'Select a model': '选择模型',
+      'System prompt': '系统提示词',
+      'Temperature': '温度 (Temperature)',
+      'Max tokens': '最大 Token 数',
+      'Top P': 'Top P',
+      'Delete': '删除',
+      'Edit': '编辑',
+      'Save': '保存',
+      'Cancel': '取消',
+      'Close': '关闭',
+      'No workflows found': '未找到工作流',
+      'Create a workflow': '创建工作流',
+      'No agents found': '未找到智能体',
+      'Create an agent': '创建智能体',
+      'No prompts found': '未找到提示词',
+      'Create a prompt': '创建提示词',
+      'No datasets found': '未找到数据集',
+      'Create a dataset': '创建数据集',
+      'No tools found': '未找到工具',
+      'Create a tool': '创建工具'
     };
 
     function translateText(text) {
       const trimmed = text.trim();
-      return translations[trimmed] || text;
+      if (translations[trimmed]) {
+        const leading = text.match(/^\\s*/)[0];
+        const trailing = text.match(/\\s*$/)[0];
+        return leading + translations[trimmed] + trailing;
+      }
+      return text;
     }
 
     function translateNode(node) {
@@ -183,11 +240,13 @@ const translateScript = `
         // Translate placeholders
         if (node.hasAttribute('placeholder')) {
           const placeholder = node.getAttribute('placeholder');
-          if (placeholder === 'Search...') {
+          if (translations[placeholder]) {
+            node.setAttribute('placeholder', translations[placeholder]);
+          } else if (placeholder === 'Search...') {
             node.setAttribute('placeholder', '搜索...');
           }
         }
-        // Translate tooltips
+        // Translate tooltips & labels
         if (node.hasAttribute('aria-label')) {
           const label = node.getAttribute('aria-label');
           if (translations[label]) {
