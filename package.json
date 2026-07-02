@@ -11,7 +11,8 @@
     "dev:agent": "npm run dev -w agent-server",
     "dev:desktop": "npm run dev -w trading-agent",
     "dev": "npm run start -w trading-agent",
-    "start": "npm run start -w trading-agent"
+    "start": "npm run start -w trading-agent",
+    "restart": "./restart-dev.sh"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
