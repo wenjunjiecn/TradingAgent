@@ -107,8 +107,17 @@ function createWindow() {
   // Inject Chinese translations on dom-ready
   mainWindow.webContents.on('dom-ready', () => {
     if (mainWindow) {
-      mainWindow.webContents.executeJavaScript(translateScript);
+      console.log('DOM ready event fired, injecting translation script...');
+      mainWindow.webContents.executeJavaScript(translateScript)
+        .then(() => console.log('Translation script successfully injected!'))
+        .catch(err => console.error('Failed to inject translation script:', err));
     }
+  });
+
+  // Redirect console messages from renderer to main process terminal
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    const levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
+    console.log(`[Browser Console - ${levels[level] || 'LOG'}]: ${message} (at ${sourceId}:${line})`);
   });
 
   mainWindow.on('closed', () => {
@@ -143,135 +152,222 @@ app.on('window-all-closed', () => {
 
 const translateScript = `
   (function() {
-    const translations = {
-      'Mastra Studio': 'Trading Agent',
-      'Agents': '智能体 (Agents)',
-      'Prompts': '提示词 (Prompts)',
-      'Workflows': '工作流 (Workflows)',
-      'Processors': '数据处理器',
-      'MCP Servers': 'MCP 服务端',
-      'Tools': '工具箱 (Tools)',
-      'Workspaces': '工作空间',
-      'Request Context': '请求上下文',
-      'Overview': '评估总览',
-      'Scorers': '打分器 (Scorers)',
-      'Datasets': '数据集 (Datasets)',
-      'Experiments': '实验对比',
-      'Metrics': '指标监控 (Metrics)',
-      'Traces': '调用链追踪 (Traces)',
-      'Logs': '系统日志 (Logs)',
-      'Settings': '系统设置',
-      'Resources': '开发资源',
-      'Search': '全局搜索 (Search)',
-      'Primitives': '基础组件',
-      'Evaluation': '模型评估',
-      'Observability': '可观测性',
-      
-      // Top bar & buttons
-      'Agents documentation': '智能体文档',
-      'Workflows documentation': '工作流文档',
-      'Prompts documentation': '提示词文档',
-      'Tools documentation': '工具文档',
-      'Datasets documentation': '数据集文档',
-      'System settings': '系统设置',
-      
-      // Tabs
-      'Chat': '对话',
-      'Editor': '编辑器',
-      'Evaluate': '评估',
-      'Review': '评审',
-      
-      // Chat area
-      'Memory': '记忆 (Context)',
-      'New Chat': '新建会话',
-      'Your conversations will appear here once you start chatting!': '开始对话后，您的历史会话将显示在这里！',
-      'How can I help you today?': '今天我能帮您做点什么？',
-      'Enter your message...': '请输入消息...',
-      
-      // Common UI Actions & Labels
-      'Search...': '搜索...',
-      'Search': '搜索',
-      'Variables': '变量',
-      'Input': '输入',
-      'Output': '输出',
-      'Steps': '步骤',
-      'Trigger': '触发器',
-      'Execute': '执行',
-      'Run': '运行',
-      'Select a model': '选择模型',
-      'System prompt': '系统提示词',
-      'Temperature': '温度 (Temperature)',
-      'Max tokens': '最大 Token 数',
-      'Top P': 'Top P',
-      'Delete': '删除',
-      'Edit': '编辑',
-      'Save': '保存',
-      'Cancel': '取消',
-      'Close': '关闭',
-      'No workflows found': '未找到工作流',
-      'Create a workflow': '创建工作流',
-      'No agents found': '未找到智能体',
-      'Create an agent': '创建智能体',
-      'No prompts found': '未找到提示词',
-      'Create a prompt': '创建提示词',
-      'No datasets found': '未找到数据集',
-      'Create a dataset': '创建数据集',
-      'No tools found': '未找到工具',
-      'Create a tool': '创建工具'
-    };
+    console.log("Translation script initializing...");
+    try {
+      const translations = {
+        'Mastra Studio': 'Trading Agent',
+        'Agents': '智能体 (Agents)',
+        'Prompts': '提示词 (Prompts)',
+        'Workflows': '工作流 (Workflows)',
+        'Processors': '数据处理器',
+        'MCP Servers': 'MCP 服务端',
+        'Tools': '工具箱 (Tools)',
+        'Workspaces': '工作空间',
+        'Request Context': '请求上下文',
+        'Overview': '评估总览',
+        'Scorers': '打分器 (Scorers)',
+        'Datasets': '数据集 (Datasets)',
+        'Experiments': '实验对比',
+        'Metrics': '指标监控 (Metrics)',
+        'Traces': '调用链追踪 (Traces)',
+        'Logs': '系统日志 (Logs)',
+        'Settings': '系统设置',
+        'Resources': '开发资源',
+        'Search': '全局搜索 (Search)',
+        'Primitives': '基础组件',
+        'Evaluation': '模型评估',
+        'Observability': '可观测性',
+        
+        // Navigation & Page Headers
+        'Home': '首页',
+        'Name': '名称',
+        'Instructions': '指令 (Instructions)',
+        'Model': '模型 (Model)',
+        'Type': '类型',
+        'Description': '描述',
+        'ID': 'ID',
+        'Status': '状态',
+        'Created': '创建时间',
+        'Updated': '更新时间',
+        'Actions': '操作',
+        
+        // Top bar & buttons
+        'Agents documentation': '智能体文档',
+        'Workflows documentation': '工作流文档',
+        'Prompts documentation': '提示词文档',
+        'Tools documentation': '工具文档',
+        'Datasets documentation': '数据集文档',
+        'System settings': '系统设置',
+        
+        // Tabs
+        'Chat': '对话',
+        'Editor': '编辑器',
+        'Evaluate': '评估',
+        'Review': '评审',
+        
+        // Chat area
+        'Memory': '记忆 (Context)',
+        'New Chat': '新建会话',
+        'Your conversations will appear here once you start chatting!': '开始对话后，您的历史会话将显示在这里！',
+        'How can I help you today?': '今天我能帮您做点什么？',
+        'Enter your message...': '请输入消息...',
+        
+        // Common UI Actions & Labels
+        'Search...': '搜索...',
+        'Search': '搜索',
+        'Variables': '变量',
+        'Input': '输入',
+        'Output': '输出',
+        'Steps': '步骤',
+        'Trigger': '触发器',
+        'Execute': '执行',
+        'Run': '运行',
+        'Select a model': '选择模型',
+        'System prompt': '系统提示词',
+        'System Prompt': '系统提示词',
+        'Temperature': '温度 (Temperature)',
+        'Max tokens': '最大 Token数',
+        'Top P': 'Top P',
+        'Delete': '删除',
+        'Edit': '编辑',
+        'Save': '保存',
+        'Cancel': '取消',
+        'Close': '关闭',
+        'No workflows found': '未找到工作流',
+        'Create a workflow': '创建工作流',
+        'No agents found': '未找到智能体',
+        'Create an agent': '创建智能体',
+        'No prompts found': '未找到提示词',
+        'Create a prompt': '创建提示词',
+        'No datasets found': '未找到数据集',
+        'Create a dataset': '创建数据集',
+        'No tools found': '未找到工具',
+        'Create a tool': '创建工具',
+        'Agent Settings': '智能体设置',
+        'Model Settings': '模型设置',
+        'Parameters': '参数'
+      };
 
-    function translateText(text) {
-      const trimmed = text.trim();
-      if (translations[trimmed]) {
-        const leading = text.match(/^\\s*/)[0];
-        const trailing = text.match(/\\s*$/)[0];
-        return leading + translations[trimmed] + trailing;
-      }
-      return text;
-    }
-
-    function translateNode(node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const translated = translateText(node.nodeValue);
-        if (translated !== node.nodeValue) {
-          node.nodeValue = translated;
-        }
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        // Translate placeholders
-        if (node.hasAttribute('placeholder')) {
-          const placeholder = node.getAttribute('placeholder');
-          if (translations[placeholder]) {
-            node.setAttribute('placeholder', translations[placeholder]);
-          } else if (placeholder === 'Search...') {
-            node.setAttribute('placeholder', '搜索...');
+      function translateText(text) {
+        if (!text) return text;
+        const trimmed = text.trim();
+        if (translations[trimmed]) {
+          const leading = text.match(/^\\s*/)[0];
+          const trailing = text.match(/\\s*$/)[0];
+          const result = leading + translations[trimmed] + trailing;
+          console.log("Translating text: [" + trimmed + "] -> [" + translations[trimmed] + "]");
+          return result;
+        } else {
+          // Log unmatched English-like strings for debugging
+          if (trimmed.length > 1 && /^[A-Za-z]/.test(trimmed)) {
+            console.log("Unmatched text: [" + trimmed + "]");
           }
         }
-        // Translate tooltips & labels
-        if (node.hasAttribute('aria-label')) {
-          const label = node.getAttribute('aria-label');
-          if (translations[label]) {
-            node.setAttribute('aria-label', translations[label]);
+        return text;
+      }
+
+      function translateNode(node) {
+        if (!node) return;
+        if (node.nodeType === Node.TEXT_NODE) {
+          const translated = translateText(node.nodeValue);
+          if (translated !== node.nodeValue) {
+            node.nodeValue = translated;
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          // Translate placeholders
+          if (node.hasAttribute('placeholder')) {
+            const placeholder = node.getAttribute('placeholder');
+            if (translations[placeholder]) {
+              node.setAttribute('placeholder', translations[placeholder]);
+              console.log("Translating placeholder: [" + placeholder + "] -> [" + translations[placeholder] + "]");
+            } else if (placeholder === 'Search...') {
+              node.setAttribute('placeholder', '搜索...');
+            }
+          }
+          // Translate tooltips & labels
+          if (node.hasAttribute('aria-label')) {
+            const label = node.getAttribute('aria-label');
+            if (translations[label]) {
+              node.setAttribute('aria-label', translations[label]);
+              console.log("Translating aria-label: [" + label + "] -> [" + translations[label] + "]");
+            }
+          }
+          for (const child of node.childNodes) {
+            translateNode(child);
           }
         }
-        for (const child of node.childNodes) {
-          translateNode(child);
+      }
+
+      function observeIframe(iframe) {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+          if (iframeDoc) {
+            console.log("Observing iframe:", iframe);
+            translateNode(iframeDoc.body);
+            
+            const iframeObserver = new MutationObserver((mutations) => {
+              for (const mutation of mutations) {
+                for (const node of mutation.addedNodes) {
+                  translateNode(node);
+                }
+                if (mutation.type === 'characterData') {
+                  translateNode(mutation.target);
+                }
+              }
+            });
+            
+            iframeObserver.observe(iframeDoc.body, { childList: true, subtree: true, characterData: true });
+          }
+        } catch (e) {
+          console.error("Cannot observe iframe:", e);
         }
       }
+
+      function setupIframeTracker() {
+        console.log("Setting up iframe tracker...");
+        document.querySelectorAll('iframe').forEach(iframe => {
+          observeIframe(iframe);
+          iframe.addEventListener('load', () => observeIframe(iframe));
+        });
+
+        const bodyObserver = new MutationObserver((mutations) => {
+          for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+              if (node.tagName === 'IFRAME') {
+                observeIframe(node);
+                node.addEventListener('load', () => observeIframe(node));
+              } else if (node.querySelectorAll) {
+                node.querySelectorAll('iframe').forEach(iframe => {
+                  observeIframe(iframe);
+                  iframe.addEventListener('load', () => observeIframe(iframe));
+                });
+              }
+            }
+          }
+        });
+        bodyObserver.observe(document.body, { childList: true, subtree: true });
+      }
+
+      // Initial execution
+      translateNode(document.body);
+      setupIframeTracker();
+      
+      const mainObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            translateNode(node);
+          }
+          if (mutation.type === 'characterData') {
+            translateNode(mutation.target);
+          }
+        }
+      });
+      mainObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+      
+      document.title = document.title.replace('Mastra Studio', 'Trading Agent');
+      console.log("Translation script initialized successfully!");
+    } catch (e) {
+      console.error("Error in translation script:", e);
     }
-
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          translateNode(node);
-        }
-        if (mutation.type === 'characterData') {
-          translateNode(mutation.target);
-        }
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    translateNode(document.body);
-    document.title = document.title.replace('Mastra Studio', 'Trading Agent');
   })();
 `;
