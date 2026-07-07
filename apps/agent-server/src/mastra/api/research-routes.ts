@@ -8,13 +8,7 @@ import {
   createAgentFromTemplate,
 } from '../agents/agent-registry';
 import { agentTemplates } from '../agents/agent-templates';
-import {
-  listWorkflowConfigs,
-  getWorkflowConfig,
-  createWorkflowConfig,
-  updateWorkflowConfig,
-  deleteWorkflowConfig,
-} from '../workflows/workflow-config-store';
+import { teamRoutes } from './team-routes';
 import {
   initReportStore,
   listReports,
@@ -219,51 +213,6 @@ const createAgentFromTemplateRoute: ApiRoute = {
   },
 };
 
-// ── 工作流配置路由 ────────────────────────────────────────────────────
-
-const listWorkflowConfigsRoute: ApiRoute = {
-  path: '/research/workflow-configs',
-  method: 'GET',
-  handler: async (c: any) => {
-    const configs = await listWorkflowConfigs();
-    return c.json({ configs });
-  },
-};
-
-const createWorkflowConfigRoute: ApiRoute = {
-  path: '/research/workflow-configs',
-  method: 'POST',
-  handler: async (c: any) => {
-    try {
-      const { name, pattern, participantAgentIds, supervisorAgentId, symbols } = await c.req.json();
-      const config = await createWorkflowConfig(
-        name,
-        pattern,
-        participantAgentIds,
-        supervisorAgentId,
-        symbols,
-      );
-      return c.json({ config }, 201);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return c.json({ error: message }, 500);
-    }
-  },
-};
-
-const deleteWorkflowConfigRoute: ApiRoute = {
-  path: '/research/workflow-configs/:id',
-  method: 'DELETE',
-  handler: async (c: any) => {
-    const id = c.req.param('id');
-    const deleted = await deleteWorkflowConfig(id);
-    if (!deleted) {
-      return c.json({ error: 'Workflow config not found' }, 404);
-    }
-    return c.json({ success: true });
-  },
-};
-
 // ── 行情数据路由 ──────────────────────────────────────────────────────
 
 const getMarketDataRoute: ApiRoute = {
@@ -322,10 +271,8 @@ export const researchRoutes: ApiRoute[] = [
   deleteAgentRoute,
   listAgentTemplatesRoute,
   createAgentFromTemplateRoute,
-  // Workflow configs
-  listWorkflowConfigsRoute,
-  createWorkflowConfigRoute,
-  deleteWorkflowConfigRoute,
+  // Agent Team configs + execution
+  ...teamRoutes,
   // Market data
   getMarketDataRoute,
   getIndicatorsRoute,

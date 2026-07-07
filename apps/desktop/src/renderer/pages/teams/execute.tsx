@@ -1,0 +1,251 @@
+import { Button } from '@mastra/playground-ui/components/Button';
+import { ErrorState } from '@mastra/playground-ui/components/ErrorState';
+import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
+import { ArrowLeft, Play, Loader2, CheckCircle2, XCircle, Users, GitBranch, Swords, Layers, ScanLine, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { useTeamConfig, useExecuteTeam, useClearTeamMemory } from '@/lib/team-api';
+import type { CollaborationPattern } from '@trading-agent/shared';
+
+const PATTERN_ICONS: Record<CollaborationPattern, React.ComponentType<{ className?: string }>> = {
+  council: Users,
+  pipeline: GitBranch,
+  debate: Swords,
+  hierarchical: Layers,
+  'parallel-scan': ScanLine,
+};
+
+const PATTERN_LABELS: Record<CollaborationPattern, string> = {
+  council: '圆桌会议',
+  pipeline: '流水线',
+  debate: '辩论',
+  hierarchical: '层级委派',
+  'parallel-scan': '并行扫描',
+};
+
+type ExecState = 'idle' | 'running' | 'success' | 'error';
+
+export default function TeamExecutePage() {
+  const { teamId } = useParams();
+  const navigate = useNavigate();
+  const { data: teamData, isLoading } = useTeamConfig(teamId ?? null);
+  const executeTeam = useExecuteTeam();
+  const clearMemory = useClearTeamMemory();
+
+  const [task, setTask] = useState('');
+  const [target, setTarget] = useState('');
+  const [extraContext, setExtraContext] = useState('');
+  const [targets, setTargets] = useState('');
+  const [execState, setExecState] = useState<ExecState>('idle');
+  const [execError, setExecError] = useState<string | null>(null);
+  const [resultId, setResultId] = useState<string | null>(null);
+
+  const team = teamData?.team;
+  const PatternIcon = team ? PATTERN_ICONS[team.collaboration.pattern] : Users;
+  const isParallelScan = team?.collaboration.pattern === 'parallel-scan';
+
+  // 初始化默认值
+  useState(() => {
+    if (team?.defaultTarget) setTarget(team.defaultTarget);
+  });
+
+  const canStart = task.trim() && execState !== 'running' &&
+    (!isParallelScan || targets.trim());
+
+  const handleStart = async () => {
+    if (!canStart || !team) return;
+    setExecState('running');
+    setExecError(null);
+    setResultId(null);
+
+    try {
+      const params: { teamId: string; task: string; target?: string; targets?: string[]; extraContext?: string } = {
+        teamId: team.id,
+        task: task.trim(),
+      };
+
+      if (isParallelScan) {
+        params.targets = targets.split(',').map(s => s.trim()).filter(Boolean);
+      } else if (target.trim()) {
+        params.target = target.trim();
+      }
+
+      if (extraContext.trim()) {
+        params.extraContext = extraContext.trim();
+      }
+
+      const result = await executeTeam.mutateAsync(params);
+      setExecState('success');
+      setResultId(result.result.id ?? null);
+    } catch (err) {
+      setExecState('error');
+      setExecError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleClearMemory = async () => {
+    if (!team) return;
+    if (confirm('确定清除团队共享 Memory 吗？这将删除所有历史上下文。')) {
+      await clearMemory.mutateAsync(team.id);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <PageLayout className="flex items-center justify-center p-8">
+        <Loader2 className="size-6 animate-spin text-neutral3" />
+      </PageLayout>
+    );
+  }
+
+  if (!team) {
+    return (
+      <PageLayout className="p-4">
+        <ErrorState title="团队不存在" message={`找不到 ID 为 ${teamId} 的团队`} />
+      </PageLayout>
+    );
+  }
+
+  return (
+    <PageLayout className="gap-4 p-4">
+      {/* 顶部操作栏 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/teams')}>
+            <ArrowLeft className="mr-1 size-4" />
+            返回
+          </Button>
+          <h1 className="font-display text-xl font-bold text-neutral6">{team.name}</h1>
+        </div>
+      </div>
+
+      {/* 团队信息卡片 */}
+      <div className="rounded-lg border border-border1 bg-surface3 p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <p className="text-sm text-neutral4">{team.description}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 rounded border border-border1 px-2 py-0.5">
+                <PatternIcon className="size-3 text-neutral3" />
+                <span className="text-xs text-neutral3">{PATTERN_LABELS[team.collaboration.pattern]}</span>
+              </div>
+              <span className="text-xs text-neutral3">{team.members.length} 成员</span>
+              {team.supervisorAgentId && (
+                <span className="text-xs text-neutral3">Supervisor: {team.supervisorAgentId}</span>
+              )}
+              {team.sharedMemoryEnabled && (
+                <span className="rounded bg-accent1/10 px-1.5 py-0.5 text-xs text-accent1">共享 Memory</span>
+              )}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {team.members.map(m => (
+                <span
+                  key={m.agentId}
+                  className="rounded-full border border-border1 bg-surface2 px-2 py-0.5 text-xs text-neutral4"
+                >
+                  {m.alias ?? m.agentId}
+                  {m.side && m.side !== 'neutral' && ` (${m.side === 'bull' ? '多' : '空'})`}
+                </span>
+              ))}
+            </div>
+          </div>
+          {team.sharedMemoryEnabled && (
+            <Button variant="outline" size="sm" onClick={handleClearMemory} className="text-red-400">
+              <Trash2 className="mr-1 size-3.5" />
+              清除 Memory
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* 任务输入区 */}
+      <div className="space-y-3 rounded-lg border border-border1 bg-surface3 p-4">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-neutral3">任务描述 *</label>
+          <textarea
+            value={task}
+            onChange={e => setTask(e.target.value)}
+            rows={4}
+            placeholder="描述你要团队完成的任务，如「分析 AAPL 的投资价值」、「评估某产品的市场前景」..."
+            className="w-full rounded border border-border1 bg-surface2 px-3 py-2 text-sm text-neutral5 placeholder:text-neutral4"
+          />
+        </div>
+
+        {/* 目标输入 */}
+        {isParallelScan ? (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral3">目标列表（逗号分隔）*</label>
+            <input
+              type="text"
+              value={targets}
+              onChange={e => setTargets(e.target.value)}
+              placeholder="AAPL, GOOGL, MSFT"
+              className="w-full rounded border border-border1 bg-surface2 px-3 py-1.5 text-sm text-neutral5 placeholder:text-neutral4"
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral3">
+              目标（可选{team.defaultTarget ? `，默认: ${team.defaultTarget}` : ''}）
+            </label>
+            <input
+              type="text"
+              value={target}
+              onChange={e => setTarget(e.target.value)}
+              placeholder="如 AAPL、产品名等"
+              className="w-full rounded border border-border1 bg-surface2 px-3 py-1.5 text-sm text-neutral5 placeholder:text-neutral4"
+            />
+          </div>
+        )}
+
+        {/* 额外上下文 */}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-neutral3">额外上下文（可选）</label>
+          <textarea
+            value={extraContext}
+            onChange={e => setExtraContext(e.target.value)}
+            rows={2}
+            placeholder="补充信息，如已知的数据、约束条件等..."
+            className="w-full rounded border border-border1 bg-surface2 px-3 py-2 text-sm text-neutral5 placeholder:text-neutral4"
+          />
+        </div>
+
+        {/* 启动按钮 */}
+        <div className="flex items-center gap-3">
+          <Button onClick={handleStart} disabled={!canStart} size="lg">
+            {execState === 'running' ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                执行中...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 size-4" />
+                启动团队任务
+              </>
+            )}
+          </Button>
+          {execState === 'success' && (
+            <span className="flex items-center gap-1 text-sm text-green-500">
+              <CheckCircle2 className="size-4" />
+              执行完成！
+              {resultId && (
+                <button
+                  onClick={() => navigate(`/reports/${resultId}`)}
+                  className="ml-1 text-accent1 underline hover:no-underline"
+                >
+                  查看报告
+                </button>
+              )}
+            </span>
+          )}
+        </div>
+
+        {/* 执行状态 */}
+        {execState === 'error' && execError && (
+          <ErrorState title="执行失败" message={execError} />
+        )}
+      </div>
+    </PageLayout>
+  );
+}

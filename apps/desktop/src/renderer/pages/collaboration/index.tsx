@@ -15,6 +15,7 @@ import {
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useAgentConfigs, useStartCollaboration } from '@/lib/research-api';
+import { useTeamConfigs } from '@/lib/team-api';
 import type { CollaborationPattern } from '@trading-agent/shared';
 
 // ── 协作模式配置 ──────────────────────────────────────────────────────
@@ -191,6 +192,7 @@ function CollaborationProgress({
 export default function CollaborationPage() {
   const navigate = useNavigate();
   const { data: agentsData, isLoading: agentsLoading } = useAgentConfigs();
+  const { data: teamsData } = useTeamConfigs();
   const startCollaboration = useStartCollaboration();
 
   const [symbol, setSymbol] = useState('');
@@ -241,6 +243,36 @@ export default function CollaborationPage() {
       <div>
         <h1 className="font-display text-xl font-bold text-neutral6">协同投研</h1>
         <p className="text-sm text-neutral3">配置 Agent 团队和协作模式，启动多角色投研分析</p>
+      </div>
+
+      {/* 已有 Team 快速选择 */}
+      {teamsData?.teams && teamsData.teams.length > 0 && (
+        <div className="rounded-xl border border-accent1/30 bg-accent1/5 p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="font-display text-sm font-semibold text-neutral6">已有团队快速执行</h3>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/teams')}>
+              管理团队
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {teamsData.teams.map(team => (
+              <button
+                key={team.id}
+                type="button"
+                onClick={() => navigate(`/teams/${team.id}/execute`)}
+                className="flex items-center gap-1.5 rounded-lg border border-border1 bg-surface3 px-3 py-1.5 text-sm text-neutral5 transition-colors hover:border-accent1 hover:bg-accent1/10"
+              >
+                <span>{team.name}</span>
+                <span className="text-xs text-neutral3">{team.members.length} 成员</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 快速配置区域 */}
+      <div className="rounded-xl border border-border1 bg-surface3 p-3">
+        <p className="text-xs text-neutral3">以下为快速配置模式，如需更多配置选项请使用 Agent Team 管理</p>
       </div>
 
       {/* 标的输入 */}

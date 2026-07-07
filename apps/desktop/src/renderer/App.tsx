@@ -93,6 +93,9 @@ import CollaborationPage from './pages/collaboration';
 import ReportsPage from './pages/reports';
 import ReportDetailPage from './pages/reports/[reportId]';
 import MarketDataPage from './pages/market-data';
+import TeamsListPage from './pages/teams';
+import TeamEditPage from './pages/teams/edit';
+import TeamExecutePage from './pages/teams/execute';
 import { AgentBuilderEditionLayout, AgentBuilderLayout } from '@/domains/agent-builder/layouts/agent-builder-layout';
 import { AgentCrumb, AgentToolCrumb } from '@/domains/agents/agent-crumb';
 import { AgentLayout } from '@/domains/agents/agent-layout';
@@ -718,6 +721,12 @@ export const routes: RouteObject[] = [
         handle: navHandleWithChildren('/reports', [{ id: 'report-detail', label: 'Report' }]),
       },
       { path: '/market-data', element: <MarketDataPage />, handle: navHandle('/market-data') },
+
+      // ── Agent Team 路由 ───────────────────────────────────────────
+      { path: '/teams', element: <TeamsListPage />, handle: navHandle('/teams') },
+      { path: '/teams/create', element: <TeamEditPage />, handle: navHandleWithChildren('/teams', [{ id: 'create-team', label: '创建团队' }]) },
+      { path: '/teams/:teamId/edit', element: <TeamEditPage />, handle: navHandleWithChildren('/teams', [{ id: 'edit-team', label: '编辑团队' }]) },
+      { path: '/teams/:teamId/execute', element: <TeamExecutePage />, handle: navHandleWithChildren('/teams', [{ id: 'execute-team', label: '执行任务' }]) },
 
       {
         index: true,

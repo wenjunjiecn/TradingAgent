@@ -108,20 +108,33 @@ MACD Histogram: ${n.macdHistogram}
 }
 
 /** 调用单个 agent 获取结构化 AgentOpinion */
-async function callAgentForOpinion(
+export async function callAgentForOpinion(
   mastra: MastraLike,
   agentId: string,
   prompt: string,
+  options?: {
+    teamInstructions?: string;
+    structuredOutputSchema?: z.ZodType;
+  },
 ): Promise<AgentOpinion> {
   const agent = mastra.getAgent(agentId);
   if (!agent) {
     throw new Error(`Agent "${agentId}" not found`);
   }
 
-  const result = await agent.generate(prompt, {
-    maxSteps: 5,
-    structuredOutput: { schema: AgentOpinionSchema },
-  });
+  const fullPrompt = [
+    options?.teamInstructions && `## 团队指令\n${options.teamInstructions}`,
+    prompt,
+  ].filter(Boolean).join('\n\n');
+
+  const generateOptions: Record<string, unknown> = { maxSteps: 5 };
+  if (options?.structuredOutputSchema) {
+    generateOptions.structuredOutput = { schema: options.structuredOutputSchema };
+  } else {
+    generateOptions.structuredOutput = { schema: AgentOpinionSchema };
+  }
+
+  const result = await agent.generate(fullPrompt, generateOptions as any);
 
   if (result.object) {
     return result.object as AgentOpinion;
@@ -139,7 +152,7 @@ async function callAgentForOpinion(
 }
 
 /** Supervisor 结构化输出 schema */
-const SupervisorOutputSchema = z.object({
+export const SupervisorOutputSchema = z.object({
   title: z.string(),
   conclusion: z.string(),
   action: z.enum(['BUY', 'SELL', 'HOLD', 'WATCH']),
@@ -150,8 +163,19 @@ const SupervisorOutputSchema = z.object({
 
 type SupervisorOutput = z.infer<typeof SupervisorOutputSchema>;
 
+/** 通用 Supervisor 输出 schema（非投研场景） */
+export const GenericSupervisorOutputSchema = z.object({
+  title: z.string(),
+  conclusion: z.string(),
+  confidence: z.number().min(0).max(1),
+  risks: z.array(RiskItemSchema).optional(),
+  trackingConditions: z.array(TrackingConditionSchema).optional(),
+});
+
+export type GenericSupervisorOutput = z.infer<typeof GenericSupervisorOutputSchema>;
+
 /** 调用 supervisor 汇总观点 */
-async function callSupervisor(
+export async function callSupervisor(
   mastra: MastraLike,
   supervisorAgentId: string,
   symbol: string,
@@ -222,7 +246,7 @@ ${extraContext ? `\n额外上下文:\n${extraContext}\n` : ''}
 }
 
 /** 规则 fallback 报告 */
-function fallbackReport(
+export function fallbackReport(
   symbol: string,
   latestPrice: number,
   indicators: Indicators,

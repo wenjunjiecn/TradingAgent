@@ -4,7 +4,7 @@ import { SettingsIcon } from '@mastra/playground-ui/icons/SettingsIcon';
 import { ToolsIcon } from '@mastra/playground-ui/icons/ToolsIcon';
 import { WorkflowIcon } from '@mastra/playground-ui/icons/WorkflowIcon';
 import { WorkspacesIcon } from '@mastra/playground-ui/icons/WorkspacesIcon';
-import { BarChart3, FileText, Users, LineChart } from 'lucide-react';
+import { BarChart3, FileText, Users, LineChart, UsersRound } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 
 export type NavIcon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -42,6 +42,13 @@ export const mainNav: NavSection[] = [
         Icon: Users,
         isOnMastraPlatform: false,
         activePaths: ['/collaboration'],
+      },
+      {
+        name: 'Agent Team',
+        url: '/teams',
+        Icon: UsersRound,
+        isOnMastraPlatform: false,
+        activePaths: ['/teams'],
       },
       {
         name: '投研报告',

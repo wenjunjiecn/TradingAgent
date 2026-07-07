@@ -11,6 +11,7 @@ import { Observability, MastraStorageExporter, MastraPlatformExporter, Sensitive
 import type { Middleware } from '@mastra/core/server';
 import { createResearchSupervisor } from './agents/research-supervisor';
 import { loadAllAgents } from './agents/agent-registry';
+import { initTeamConfigStore } from './teams/team-config-store';
 import { tradingMcpServer } from './mcps/trading-mcp-server';
 import { tradingWorkflow } from './workflows/trading-workflow';
 import { researchRoutes } from './api/research-routes';
@@ -90,6 +91,9 @@ const storage = new MastraCompositeStore({
 // 从 DB 加载所有 agent 配置并实例化为 Mastra Agent 对象。
 // 首次启动时自动从模板种子化默认投研角色。
 const dynamicAgents = await loadAllAgents();
+
+// 初始化 Agent Team 配置存储（含旧数据迁移和种子化）
+await initTeamConfigStore();
 
 // 提取 supervisor 所需的 4 个核心子 agent
 const supervisorSubAgents: Record<string, any> = {};

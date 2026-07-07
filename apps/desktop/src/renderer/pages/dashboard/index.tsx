@@ -1,6 +1,6 @@
 import { Button } from '@mastra/playground-ui/components/Button';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
-import { ArrowRight, FileText, TrendingUp, Users, Activity, Trash2 } from 'lucide-react';
+import { ArrowRight, FileText, TrendingUp, Users, Activity, Trash2, UsersRound } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useReports, useReportStats, useDeleteReport } from '@/lib/research-api';
@@ -290,6 +290,13 @@ function QuickActionsPanel() {
       onClick: () => navigate('/collaboration'),
     },
     {
+      label: '管理 Agent Team',
+      description: '创建和管理多 Agent 协作团队，配置协作模式',
+      icon: UsersRound,
+      color: 'text-amber-400',
+      onClick: () => navigate('/teams'),
+    },
+    {
       label: '查看行情数据',
       description: 'K 线图表、技术指标、基本面数据一屏总览',
       icon: TrendingUp,
@@ -306,7 +313,7 @@ function QuickActionsPanel() {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
       {actions.map(action => (
         <button
           key={action.label}
