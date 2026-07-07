@@ -32,7 +32,6 @@ export function navHandle(url: string): RouteHeaderHandle {
   }
   return {
     crumbs: [{ id: `nav:${url}`, label: item.name, icon: item.Icon }],
-    docs: item.docs,
   };
 }
 
@@ -46,7 +45,6 @@ export function navHandleWithChildren(parentUrl: string, leaves: CrumbDef[]): Ro
   }
   return {
     crumbs: [{ id: `nav:${parentUrl}`, label: parent.name, icon: parent.Icon, to: parentUrl }, ...leaves],
-    docs: parent.docs,
   };
 }
 

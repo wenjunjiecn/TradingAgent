@@ -10,7 +10,7 @@ import { cn } from '@mastra/playground-ui/utils/cn';
 import { formatJSON, isValidJson } from '@mastra/playground-ui/utils/formatting';
 import { toast } from '@mastra/playground-ui/utils/toast';
 import CodeMirror from '@uiw/react-codemirror';
-import { Braces, CopyIcon, ExternalLink, X } from 'lucide-react';
+import { Braces, CopyIcon, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { RequestContextLabel } from '@/domains/request-context/components/request-context-label';
@@ -224,14 +224,6 @@ export const RequestContextWrapper = ({ children }: { children: ReactNode }) => 
         variant="note"
         title="Request context"
         className="mb-5"
-        action={
-          <Notice.Button as={Link} to="https://mastra.ai/docs/server/request-context" target="_blank">
-            <Icon>
-              <ExternalLink />
-            </Icon>
-            See documentation
-          </Notice.Button>
-        }
       >
         <Notice.Message>
           Mastra provides request context, which is a system based on dependency injection that enables you to configure

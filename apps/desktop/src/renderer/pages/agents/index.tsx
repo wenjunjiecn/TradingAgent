@@ -60,7 +60,7 @@ function Agents() {
                 trading research
               </span>
             </div>
-            <h1 className="text-2xl font-semibold leading-8 text-neutral6">Agent Team</h1>
+            <h1 className="text-2xl font-semibold leading-8 text-neutral6">Agent配置</h1>
             <p className="mt-1 text-sm leading-6 text-neutral3">市场结构、情绪面、技术信号、风险检查</p>
           </div>
           <div className="w-full max-w-[28rem]">

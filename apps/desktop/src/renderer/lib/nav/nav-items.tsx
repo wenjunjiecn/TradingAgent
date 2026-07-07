@@ -13,7 +13,6 @@ export interface NavItem {
   name: string;
   url: string;
   Icon: NavIcon;
-  docs?: { href: string; label?: string };
   isOnMastraPlatform?: boolean;
   activePaths?: string[];
 }
@@ -66,38 +65,33 @@ export const mainNav: NavSection[] = [
     title: '系统',
     items: [
       {
-        name: 'Agents',
+        name: 'Agent配置',
         url: '/agents',
         Icon: AgentIcon,
-        docs: { href: 'https://mastra.ai/en/docs/agents/overview', label: 'Agents documentation' },
         isOnMastraPlatform: true,
       },
       {
         name: 'Workflows',
         url: '/workflows',
         Icon: WorkflowIcon,
-        docs: { href: 'https://mastra.ai/en/docs/workflows/overview', label: 'Workflows documentation' },
         isOnMastraPlatform: true,
       },
       {
         name: 'MCP Servers',
         url: '/mcps',
         Icon: McpServerIcon,
-        docs: { href: 'https://mastra.ai/en/docs/tools-mcp/mcp-overview', label: 'MCP documentation' },
         isOnMastraPlatform: true,
       },
       {
         name: 'Tools',
         url: '/tools',
         Icon: ToolsIcon,
-        docs: { href: 'https://mastra.ai/en/docs/agents/using-tools-and-mcp', label: 'Tools documentation' },
         isOnMastraPlatform: true,
       },
       {
         name: 'Skills',
         url: '/workspaces',
         Icon: WorkspacesIcon,
-        docs: { href: 'https://mastra.ai/en/docs/workspace/skills', label: 'Skills documentation' },
         isOnMastraPlatform: true,
       },
     ],

@@ -109,79 +109,37 @@ export const AgentMetadata = ({ agentId }: AgentMetadataProps) => {
       )}
 
       {networkAgents.length > 0 && (
-        <AgentMetadataSection
-          title="Agents"
-          hint={{
-            link: 'https://mastra.ai/en/docs/agents/overview',
-            title: 'Agents documentation',
-          }}
-        >
+        <AgentMetadataSection title="Agents">
           <AgentMetadataNetworkList agents={networkAgents} />
         </AgentMetadataSection>
       )}
 
-      <AgentMetadataSection
-        title="Tools"
-        hint={{
-          link: 'https://mastra.ai/en/docs/agents/using-tools-and-mcp',
-          title: 'Using Tools and MCP documentation',
-        }}
-      >
+      <AgentMetadataSection title="Tools">
         <AgentMetadataToolList tools={tools} agentId={agentId} />
       </AgentMetadataSection>
 
-      <AgentMetadataSection
-        title="Workflows"
-        hint={{
-          link: 'https://mastra.ai/en/docs/workflows/overview',
-          title: 'Workflows documentation',
-        }}
-      >
+      <AgentMetadataSection title="Workflows">
         <AgentMetadataWorkflowList workflows={workflows} />
       </AgentMetadataSection>
 
-      <AgentMetadataSection
-        title="Skills"
-        hint={{
-          link: 'https://mastra.ai/en/docs/workspace/skills',
-          title: 'Skills documentation',
-        }}
-      >
+      <AgentMetadataSection title="Skills">
         <AgentMetadataSkillList skills={skills} agentId={agentId} workspaceId={workspaceId} />
       </AgentMetadataSection>
 
       {workspaceTools.length > 0 && (
-        <AgentMetadataSection
-          title="Workspace Tools"
-          hint={{
-            link: 'https://mastra.ai/en/reference/workspace/workspace-class#agent-tools',
-            title: 'Workspace tools documentation',
-          }}
-        >
+        <AgentMetadataSection title="Workspace Tools">
           <AgentMetadataWorkspaceToolsList tools={workspaceTools} />
         </AgentMetadataSection>
       )}
 
       {browserTools.length > 0 && (
-        <AgentMetadataSection
-          title="Browser Tools"
-          hint={{
-            link: 'https://mastra.ai/en/docs/agents/adding-browser-control',
-            title: 'Browser tools documentation',
-          }}
-        >
+        <AgentMetadataSection title="Browser Tools">
           <AgentMetadataBrowserToolsList tools={browserTools} />
         </AgentMetadataSection>
       )}
 
       {(inputProcessors.length > 0 || outputProcessors.length > 0) && (
-        <AgentMetadataSection
-          title="Processors"
-          hint={{
-            link: 'https://mastra.ai/docs/agents/processors',
-            title: 'Processors documentation',
-          }}
-        >
+        <AgentMetadataSection title="Processors">
           <AgentMetadataCombinedProcessorList inputProcessors={inputProcessors} outputProcessors={outputProcessors} />
         </AgentMetadataSection>
       )}

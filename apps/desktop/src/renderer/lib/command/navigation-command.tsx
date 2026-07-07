@@ -136,7 +136,7 @@ const ScopeButton = ({
 );
 
 function getRouteValue(item: NavItem, sectionTitle?: string) {
-  return [item.name, item.url, sectionTitle, item.docs?.label, 'path route navigate'].filter(Boolean).join(' ');
+  return [item.name, item.url, sectionTitle, 'path route navigate'].filter(Boolean).join(' ');
 }
 
 function getRouteBadge(sectionTitle?: string) {

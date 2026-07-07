@@ -217,7 +217,7 @@ export function AgentsList({ agents, isLoading, search = '' }: AgentsListProps) 
         return (
           <Link
             key={agent.id}
-            href={paths.agentLink(agent.id)}
+            href={paths.cmsAgentEditLink(agent.id)}
             className={cn(
               'group relative min-h-[17rem] overflow-hidden rounded-lg border border-l-2 border-border1 bg-surface3/75 p-4 outline-none',
               'transition-[background-color,border-color,transform] duration-150 ease-out hover:-translate-y-0.5 hover:border-neutral3 hover:bg-surface4/70',

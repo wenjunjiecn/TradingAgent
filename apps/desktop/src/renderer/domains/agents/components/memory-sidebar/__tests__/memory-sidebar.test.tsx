@@ -222,7 +222,7 @@ describe('MemorySidebar', () => {
     expect(blocks.length).toBe(1);
   });
 
-  it('replaces the panel with an empty state and docs CTA when memory is disabled', async () => {
+  it('replaces the panel with an empty state when memory is disabled', async () => {
     renderSidebar([], false);
 
     // The empty state explains memory is required; the thread list / New Chat is not rendered.
@@ -231,10 +231,6 @@ describe('MemorySidebar', () => {
 
     // The memory card is hidden entirely when memory is off.
     expect(screen.queryByTestId('memory-sidebar-card')).toBeNull();
-
-    // An outline CTA links to the Agent Memory docs.
-    const cta = screen.getByRole('link', { name: /documentation/i });
-    expect(cta.getAttribute('href')).toBe('https://mastra.ai/en/docs/agents/agent-memory');
   });
 
   it('shows the live memory content, without the static config, when the Memory card is clicked', async () => {

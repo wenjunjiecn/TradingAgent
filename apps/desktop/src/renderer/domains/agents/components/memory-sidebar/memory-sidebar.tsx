@@ -1,5 +1,4 @@
 import type { StorageThreadType } from '@mastra/core/memory';
-import { Button } from '@mastra/playground-ui/components/Button';
 import { EmptyState } from '@mastra/playground-ui/components/EmptyState';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@mastra/playground-ui/components/Tooltip';
 import { Txt } from '@mastra/playground-ui/components/Txt';
@@ -283,17 +282,6 @@ export function MemorySidebar({
           iconSlot={null}
           titleSlot="Memory not enabled"
           descriptionSlot="Conversations are only saved as threads when the agent has memory configured."
-          actionSlot={
-            <Button
-              as="a"
-              href="https://mastra.ai/en/docs/agents/agent-memory"
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="outline"
-            >
-              View documentation
-            </Button>
-          }
         />
       )}
     </SidebarPanel>

@@ -1,7 +1,5 @@
 import { Breadcrumb, Crumb } from '@mastra/playground-ui/components/Breadcrumb';
-import { Button } from '@mastra/playground-ui/components/Button';
 import { Header } from '@mastra/playground-ui/components/Header';
-import { DocsIcon } from '@mastra/playground-ui/icons/DocsIcon';
 import { Icon } from '@mastra/playground-ui/icons/Icon';
 import { Link } from 'react-router';
 import { RouteHeaderActionsSlot } from './route-header-actions';
@@ -20,7 +18,7 @@ function RouteHeaderCrumbContent({ def }: { def: CrumbDef }) {
 }
 
 export function RouteHeader() {
-  const { crumbs: handleCrumbs, docs } = useRouteHeader();
+  const { crumbs: handleCrumbs } = useRouteHeader();
   const override = useRouteHeaderCrumbsOverride();
   const crumbs = override ?? handleCrumbs;
   const lastIdx = crumbs.length - 1;
@@ -55,21 +53,6 @@ export function RouteHeader() {
 
       <div className="ml-auto flex shrink-0 items-center gap-2 overflow-hidden">
         <RouteHeaderActionsSlot className="contents" />
-        {docs && (
-          <Button
-            as="a"
-            href={docs.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="ghost"
-            size="sm"
-            aria-label={docs.label ?? 'Documentation'}
-            className="min-w-0 max-w-[14rem]"
-          >
-            <DocsIcon />
-            <span className="min-w-0 truncate">{docs.label ?? 'Documentation'}</span>
-          </Button>
-        )}
       </div>
     </Header>
   );
