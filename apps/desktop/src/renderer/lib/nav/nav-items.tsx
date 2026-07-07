@@ -4,6 +4,7 @@ import { SettingsIcon } from '@mastra/playground-ui/icons/SettingsIcon';
 import { ToolsIcon } from '@mastra/playground-ui/icons/ToolsIcon';
 import { WorkflowIcon } from '@mastra/playground-ui/icons/WorkflowIcon';
 import { WorkspacesIcon } from '@mastra/playground-ui/icons/WorkspacesIcon';
+import { BarChart3, FileText, Users, LineChart } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 
 export type NavIcon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -25,9 +26,44 @@ export interface NavSection {
 }
 
 export const mainNav: NavSection[] = [
+  // ── 投研核心 ──────────────────────────────────────────────────────
+  {
+    key: 'research',
+    title: '投研',
+    items: [
+      {
+        name: '投研看板',
+        url: '/dashboard',
+        Icon: BarChart3,
+        isOnMastraPlatform: false,
+      },
+      {
+        name: '协同投研',
+        url: '/collaboration',
+        Icon: Users,
+        isOnMastraPlatform: false,
+        activePaths: ['/collaboration'],
+      },
+      {
+        name: '投研报告',
+        url: '/reports',
+        Icon: FileText,
+        isOnMastraPlatform: false,
+        activePaths: ['/reports'],
+      },
+      {
+        name: '行情数据',
+        url: '/market-data',
+        Icon: LineChart,
+        isOnMastraPlatform: false,
+        activePaths: ['/market-data'],
+      },
+    ],
+  },
+  // ── 系统配置 ──────────────────────────────────────────────────────
   {
     key: 'primitives',
-    title: 'Primitives',
+    title: '系统',
     items: [
       {
         name: 'Agents',

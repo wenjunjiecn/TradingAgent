@@ -22,9 +22,9 @@ export const StudioIndexRedirect = () => {
 
   if (isPermissionsLoading) return null;
 
-  // If RBAC is disabled or not authenticated, go to /agents (default behavior)
+  // If RBAC is disabled or not authenticated, go to /dashboard (投研看板)
   if (!rbacEnabled || !isAuthenticated) {
-    return <Navigate to="/agents" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   // Find the first route the user has permission to access

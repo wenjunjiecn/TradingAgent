@@ -4,12 +4,17 @@ import {
   KLineDataSchema,
   IndicatorsSchema,
   TradeSignalSchema,
+  ResearchReportSchema,
   type KLineData,
   type Indicators,
   type TradeSignal,
+  type ResearchReport,
 } from '@trading-agent/shared';
 import { getMarketData } from '../tools/market-data-tool';
 import { calculateIndicators } from '../tools/technical-analysis-tool';
+import { executeCollaboration } from './collaboration-engine';
+
+type SignalType = 'BUY' | 'SELL' | 'HOLD' | 'WATCH';
 
 function round(value: number, digits: number): number {
   return Number(value.toFixed(digits));
@@ -55,88 +60,107 @@ function deriveSignal(symbol: string, latestPrice: number, indicators: Indicator
   });
 }
 
-// ── Step 1: 获取行情 K 线数据 ──────────────────────────────────────────
+// ── Step 1: 获取行情 K 线数据 + 计算指标 ──────────────────────────────
 const fetchMarketData = createStep({
   id: 'fetch-market-data',
-  description: 'Fetch historical K-line data from Yahoo Finance',
+  description: 'Fetch historical K-line data and compute technical indicators',
   inputSchema: z.object({
     symbol: z.string().describe('US stock ticker, e.g. AAPL'),
+    pattern: z.enum(['council', 'pipeline', 'debate', 'hierarchical', 'parallel-scan']).optional(),
+    participantAgentIds: z.array(z.string()).optional(),
+    supervisorAgentId: z.string().optional(),
   }),
   outputSchema: z.object({
     symbol: z.string(),
     latestPrice: z.number(),
     klines: z.array(KLineDataSchema),
+    indicators: IndicatorsSchema,
+    pattern: z.enum(['council', 'pipeline', 'debate', 'hierarchical', 'parallel-scan']).optional(),
+    participantAgentIds: z.array(z.string()).optional(),
+    supervisorAgentId: z.string().optional(),
   }),
   execute: async ({ inputData }) => {
     if (!inputData?.symbol) throw new Error('Symbol is required');
     const result = await getMarketData(inputData.symbol, '3mo');
-    return { symbol: result.symbol, latestPrice: result.latestPrice, klines: result.klines };
+    const indicators = calculateIndicators(result.klines as KLineData[]);
+    return {
+      symbol: result.symbol,
+      latestPrice: result.latestPrice,
+      klines: result.klines,
+      indicators,
+      pattern: inputData.pattern,
+      participantAgentIds: inputData.participantAgentIds,
+      supervisorAgentId: inputData.supervisorAgentId,
+    };
   },
 });
 
-// ── Step 2: 计算技术指标 ────────────────────────────────────────────────
-const computeIndicators = createStep({
-  id: 'compute-indicators',
-  description: 'Calculate MA20, MA60, RSI, MACD from K-line data',
+// ── Step 2: 协作分析 — 通过协作引擎执行多角色 Agent 分析 ──────────────────
+const collaborationAnalysis = createStep({
+  id: 'collaboration-analysis',
+  description: 'Execute collaboration pattern (council/pipeline/debate/hierarchical) to produce a research report',
   inputSchema: z.object({
     symbol: z.string(),
     latestPrice: z.number(),
     klines: z.array(KLineDataSchema),
+    indicators: IndicatorsSchema,
+    pattern: z.enum(['council', 'pipeline', 'debate', 'hierarchical', 'parallel-scan']).optional(),
+    participantAgentIds: z.array(z.string()).optional(),
+    supervisorAgentId: z.string().optional(),
   }),
   outputSchema: z.object({
-    symbol: z.string(),
-    latestPrice: z.number(),
-    indicators: IndicatorsSchema,
-  }),
-  execute: async ({ inputData }) => {
-    if (!inputData) throw new Error('Input data missing');
-    const indicators = calculateIndicators(inputData.klines as KLineData[]);
-    return {
-      symbol: inputData.symbol,
-      latestPrice: inputData.latestPrice,
-      indicators,
-    };
-  },
-});
-
-// ── Step 3: Agent 综合分析，生成交易信号 ──────────────────────────────────
-const generateSignal = createStep({
-  id: 'generate-signal',
-  description: 'Use Trading Agent to produce BUY/SELL/HOLD signal with reasoning',
-  inputSchema: z.object({
-    symbol: z.string(),
-    latestPrice: z.number(),
-    indicators: IndicatorsSchema,
-  }),
-  outputSchema: z.object({
-    signal: TradeSignalSchema,
+    report: ResearchReportSchema,
     summary: z.string(),
   }),
-  execute: async ({ inputData }) => {
+  execute: async ({ inputData, mastra }) => {
     if (!inputData) throw new Error('Input data missing');
-    const { symbol, latestPrice, indicators } = inputData;
-    const signal = deriveSignal(symbol, latestPrice, indicators);
+    const { symbol, latestPrice, klines, indicators, pattern } = inputData;
+
+    // 默认参与 agent 和 supervisor
+    const participantAgentIds = inputData.participantAgentIds ?? [
+      'trading-agent',
+      'market-analysis-agent',
+      'sentiment-analysis-agent',
+      'risk-analysis-agent',
+    ];
+    const supervisorAgentId = inputData.supervisorAgentId ?? 'research-supervisor';
+
+    const report = await executeCollaboration(mastra as any, {
+      symbol,
+      pattern: pattern ?? 'council',
+      participantAgentIds,
+      supervisorAgentId,
+      marketData: {
+        latestPrice,
+        klines: klines as KLineData[],
+        indicators: indicators as Indicators,
+      },
+    }) as ResearchReport;
+
     return {
-      signal,
-      summary: `${symbol} 分析完成：${signal.action} @ $${signal.price.toFixed(2)}。${signal.reason}`,
+      report,
+      summary: `${symbol} 投研完成（${pattern} 模式）：${report.action} @ $${latestPrice.toFixed(2)}（信心度 ${report.confidence}）。${report.conclusion.slice(0, 100)}...`,
     };
   },
 });
 
-// ── Workflow 组装 ───────────────────────────────────────────────────────
+// ── Workflow 组装 ─────────────────────────────────────────────────────
+// 取数 → 协作分析（默认 Council 模式，可通过 input 指定其他模式）
 const tradingWorkflow = createWorkflow({
   id: 'trading-workflow',
   inputSchema: z.object({
     symbol: z.string().describe('US stock ticker symbol, e.g. AAPL'),
+    pattern: z.enum(['council', 'pipeline', 'debate', 'hierarchical', 'parallel-scan']).optional().describe('Collaboration pattern (default: council)'),
+    participantAgentIds: z.array(z.string()).optional().describe('Participant agent IDs (default: 4 core agents)'),
+    supervisorAgentId: z.string().optional().describe('Supervisor agent ID (default: research-supervisor)'),
   }),
   outputSchema: z.object({
-    signal: TradeSignalSchema,
+    report: ResearchReportSchema,
     summary: z.string(),
   }),
 })
   .then(fetchMarketData)
-  .then(computeIndicators)
-  .then(generateSignal);
+  .then(collaborationAnalysis);
 
 tradingWorkflow.commit();
 export { tradingWorkflow };

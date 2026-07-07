@@ -9,14 +9,11 @@ import { LocalSkillSource, Workspace } from '@mastra/core/workspace';
 import { MastraEditor } from '@mastra/editor';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
 import type { Middleware } from '@mastra/core/server';
-import {
-  marketAnalysisAgent,
-  riskAnalysisAgent,
-  sentimentAnalysisAgent,
-  tradingAgent,
-} from './agents/trading-agent';
+import { createResearchSupervisor } from './agents/research-supervisor';
+import { loadAllAgents } from './agents/agent-registry';
 import { tradingMcpServer } from './mcps/trading-mcp-server';
 import { tradingWorkflow } from './workflows/trading-workflow';
+import { researchRoutes } from './api/research-routes';
 
 const DESKTOP_AUTH_HEADER = 'x-trading-agent-token';
 const desktopAuthToken = process.env.TRADING_AGENT_DESKTOP_TOKEN;
@@ -89,14 +86,31 @@ const storage = new MastraCompositeStore({
   }),
 });
 
+// ── 动态加载 Agent 配置 ────────────────────────────────────────────────
+// 从 DB 加载所有 agent 配置并实例化为 Mastra Agent 对象。
+// 首次启动时自动从模板种子化默认投研角色。
+const dynamicAgents = await loadAllAgents();
+
+// 提取 supervisor 所需的 4 个核心子 agent
+const supervisorSubAgents: Record<string, any> = {};
+for (const key of ['trading-agent', 'market-analysis-agent', 'sentiment-analysis-agent', 'risk-analysis-agent']) {
+  if (dynamicAgents[key]) {
+    supervisorSubAgents[key] = dynamicAgents[key];
+  }
+}
+
+// 创建投研总监 Supervisor Agent，注入子 agent 引用
+const researchSupervisor = createResearchSupervisor(supervisorSubAgents);
+
+// 合并所有 agent：动态加载的 + supervisor
+const allAgents = {
+  ...dynamicAgents,
+  'research-supervisor': researchSupervisor,
+};
+
 export const mastra = new Mastra({
   workflows: { tradingWorkflow },
-  agents: {
-    tradingAgent,
-    marketAnalysisAgent,
-    sentimentAnalysisAgent,
-    riskAnalysisAgent,
-  },
+  agents: allAgents,
   mcpServers: { tradingMcpServer },
   workspace,
   storage,
@@ -105,6 +119,7 @@ export const mastra = new Mastra({
   }),
   server: {
     middleware: desktopAuthMiddleware,
+    apiRoutes: researchRoutes,
     cors: {
       origin: resolveCorsOrigin,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

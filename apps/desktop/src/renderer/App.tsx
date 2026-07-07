@@ -88,6 +88,11 @@ import Workspace from './pages/workspace';
 import WorkspaceSkillDetailPage from './pages/workspace/skills/[skillName]';
 import { Layout } from '@/components/layout';
 import { MinimalLayout } from '@/components/minimal-layout';
+import Dashboard from './pages/dashboard';
+import CollaborationPage from './pages/collaboration';
+import ReportsPage from './pages/reports';
+import ReportDetailPage from './pages/reports/[reportId]';
+import MarketDataPage from './pages/market-data';
 import { AgentBuilderEditionLayout, AgentBuilderLayout } from '@/domains/agent-builder/layouts/agent-builder-layout';
 import { AgentCrumb, AgentToolCrumb } from '@/domains/agents/agent-crumb';
 import { AgentLayout } from '@/domains/agents/agent-layout';
@@ -702,6 +707,17 @@ export const routes: RouteObject[] = [
             },
           ]
         : []),
+
+      // ── 投研核心路由 ──────────────────────────────────────────────
+      { path: '/dashboard', element: <Dashboard />, handle: navHandle('/dashboard') },
+      { path: '/collaboration', element: <CollaborationPage />, handle: navHandle('/collaboration') },
+      { path: '/reports', element: <ReportsPage />, handle: navHandle('/reports') },
+      {
+        path: '/reports/:reportId',
+        element: <ReportDetailPage />,
+        handle: navHandleWithChildren('/reports', [{ id: 'report-detail', label: 'Report' }]),
+      },
+      { path: '/market-data', element: <MarketDataPage />, handle: navHandle('/market-data') },
 
       {
         index: true,
