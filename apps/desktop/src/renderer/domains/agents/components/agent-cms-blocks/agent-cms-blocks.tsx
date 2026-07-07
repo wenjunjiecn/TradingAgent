@@ -117,9 +117,9 @@ export const AgentCMSBlocks = ({
   };
 
   return (
-    <div className={cn('flex flex-col w-full h-full overflow-y-auto', className)}>
+    <div className={cn('flex flex-col w-full', className)}>
       {items.length > 0 && (
-        <div className="overflow-y-auto h-full pl-10 pr-2">
+        <div className="pl-10 pr-2">
           <ContentBlocks items={items} onChange={onChange} className="flex flex-col w-full">
             {items.map((block, index) => (
               <div key={block.id}>

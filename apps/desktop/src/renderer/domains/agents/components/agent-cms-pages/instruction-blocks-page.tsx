@@ -10,7 +10,7 @@ export function InstructionBlocksPage() {
   const schema = form.watch('variables');
 
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea className="max-h-[50vh]">
       <div className="py-6 px-2">
         <Controller
           name="instructionBlocks"
