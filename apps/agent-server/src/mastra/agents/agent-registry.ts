@@ -8,7 +8,8 @@ import {
 } from '@trading-agent/shared';
 import { getToolsByIds } from '../tools/tool-registry';
 import { agentTemplates } from './agent-templates';
-import { getDb } from '../db';
+import { getDb, DB_URL } from '../db';
+import { runMigrations } from '../db-migrations';
 
 /**
  * Agent 注册中心
@@ -17,41 +18,12 @@ import { getDb } from '../db';
  * 使用 LibSQL 存储配置，启动时自动从模板种子化默认角色。
  */
 
-const DB_URL = 'file:./mastra.db';
 const TABLE_NAME = 'agent_configs';
 
 let storeInitialized = false;
 
 function getDbClient(): Client {
   return getDb();
-}
-
-/** 确保 agent_configs 表存在（含摘要列迁移） */
-async function ensureTable(): Promise<void> {
-  const db = getDbClient();
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
-      id TEXT PRIMARY KEY,
-      config TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-  `);
-
-  // 迁移：添加摘要列
-  const pragma = await db.execute({ sql: `PRAGMA table_info(${TABLE_NAME})` });
-  const existingCols = new Set(pragma.rows.map(r => (r as any).name));
-  const toAdd = [
-    { col: 'name', type: 'TEXT' },
-    { col: 'description', type: 'TEXT' },
-    { col: 'model', type: 'TEXT' },
-  ];
-  for (const { col, type } of toAdd) {
-    if (!existingCols.has(col)) {
-      await db.execute({ sql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN ${col} ${type}` });
-      await db.execute({ sql: `UPDATE ${TABLE_NAME} SET ${col} = json_extract(config, '$.${col}')` });
-    }
-  }
 }
 
 /** 种子 agent ID 映射 — 模板 ID → agent ID（与 workflow 中的 getAgent() 调用对应） */
@@ -116,7 +88,7 @@ async function seedDefaults(): Promise<void> {
 /** 初始化注册中心（仅首次调用执行完整初始化） */
 export async function initAgentRegistry(): Promise<void> {
   if (storeInitialized) return;
-  await ensureTable();
+  await runMigrations();
   await seedDefaults();
   storeInitialized = true;
 }
@@ -144,7 +116,7 @@ export interface AgentConfigSummary {
 export async function listAgentConfigSummaries(): Promise<AgentConfigSummary[]> {
   const db = getDbClient();
   // 完全从 config JSON 中提取字段，不依赖迁移列（name/description/model）
-  // 这样即使 ensureTable() 迁移未执行或列缺失也能正常工作
+  // 这样即使迁移列缺失也能正常工作
   const result = await db.execute({
     sql: `SELECT
       id,

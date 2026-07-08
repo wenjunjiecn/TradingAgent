@@ -7,6 +7,7 @@ import type {
 } from '@trading-agent/shared';
 import { agentTeamTemplates } from './team-templates';
 import { getDb } from '../db';
+import { runMigrations } from '../db-migrations';
 
 /**
  * Agent Team 配置存储
@@ -22,19 +23,6 @@ let storeInitialized = false;
 
 function getDbClient(): Client {
   return getDb();
-}
-
-/** 确保 agent_teams 表存在 */
-async function ensureTable(): Promise<void> {
-  const db = getDbClient();
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
-      id TEXT PRIMARY KEY,
-      config TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-  `);
 }
 
 /** 从模板创建 AgentTeamConfig */
@@ -171,7 +159,7 @@ async function seedDefaults(): Promise<void> {
 /** 初始化 Team 配置存储（仅首次调用执行完整初始化） */
 export async function initTeamConfigStore(): Promise<void> {
   if (storeInitialized) return;
-  await ensureTable();
+  await runMigrations();
   await migrateOldWorkflowConfigs();
   await seedDefaults();
   storeInitialized = true;

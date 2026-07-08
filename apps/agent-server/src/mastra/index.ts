@@ -1,7 +1,5 @@
-
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
 import { Mastra } from '@mastra/core/mastra';
+import { join, resolve } from 'node:path';
 import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
 import { MastraCompositeStore } from '@mastra/core/storage';
@@ -11,37 +9,13 @@ import { Observability, MastraStorageExporter, MastraPlatformExporter, Sensitive
 import type { Middleware } from '@mastra/core/server';
 import { loadAllAgents } from './agents/agent-registry';
 import { initTeamConfigStore } from './teams/team-config-store';
+import { findProjectRoot, DB_URL } from './db';
 import { tradingMcpServer } from './mcps/trading-mcp-server';
 import { tradingWorkflow } from './workflows/trading-workflow';
 import { researchRoutes } from './api/research-routes';
 
 const DESKTOP_AUTH_HEADER = 'x-trading-agent-token';
 const desktopAuthToken = process.env.TRADING_AGENT_DESKTOP_TOKEN;
-
-function findProjectRoot(startDir: string): string {
-  let current = resolve(startDir);
-
-  while (true) {
-    const packageJsonPath = join(current, 'package.json');
-
-    if (existsSync(packageJsonPath)) {
-      try {
-        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { name?: string };
-        if (packageJson.name === 'trading-agent-monorepo') {
-          return current;
-        }
-      } catch {
-        // Keep walking up; malformed package.json should not prevent startup.
-      }
-    }
-
-    const parent = dirname(current);
-    if (parent === current) {
-      return resolve(process.env.INIT_CWD ?? process.cwd());
-    }
-    current = parent;
-  }
-}
 
 const projectRoot = findProjectRoot(process.env.INIT_CWD ?? process.cwd());
 
@@ -78,11 +52,11 @@ const storage = new MastraCompositeStore({
   id: 'composite-storage',
   default: new LibSQLStore({
     id: 'mastra-storage',
-    url: 'file:./mastra.db',
+    url: DB_URL,
   }),
   editor: new LibSQLStore({
     id: 'mastra-editor-storage',
-    url: 'file:./mastra.db',
+    url: DB_URL,
   }),
 });
 

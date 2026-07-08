@@ -6,11 +6,9 @@ node_modules/
 
 # Mastra runtime files
 .mastra/
-*.db
-*.db-shm
-*.db-wal
-*.duckdb
-*.duckdb.wal
+
+# Database files (runtime data, not source)
+# DB 默认存储在 ~/.trading-agent/，不在项目目录内
 
 # Build output
 dist/

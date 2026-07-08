@@ -1,5 +1,6 @@
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
+import { DB_URL } from '../db';
 
 /**
  * 团队级共享 Memory 管理
@@ -8,7 +9,6 @@ import { LibSQLStore } from '@mastra/libsql';
  * 按 team ID 隔离，跨执行保留上下文。
  */
 
-const DB_URL = 'file:./mastra.db';
 
 const memoryCache = new Map<string, Memory>();
 
