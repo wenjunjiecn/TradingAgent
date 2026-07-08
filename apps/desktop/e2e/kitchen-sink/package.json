@@ -1,5 +1,5 @@
 {
-  "name": "e2e-studio",
+  "name": "@trading-agent/e2e-kitchen-sink",
   "type": "module",
   "version": "0.0.1",
   "private": true,
@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@types/node": "22.19.20",
-    "typescript": "^5.9.3"
-  },
-  "packageManager": "pnpm@11.5.1"
+    "typescript": "^6.0.3"
+  }
 }

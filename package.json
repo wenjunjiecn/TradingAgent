@@ -3,21 +3,32 @@
   "version": "1.0.0",
   "private": true,
   "description": "Trading Agent Monorepo workspace",
+  "packageManager": "npm@11.11.0",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "apps/desktop/e2e/kitchen-sink"
   ],
   "scripts": {
-    "dev:agent": "npm run dev -w agent-server",
-    "dev:renderer": "npm run build -w @mastra/playground-ui && npm run dev:renderer -w trading-agent",
+    "dev:agent": "npm run dev -w @trading-agent/agent-server",
+    "dev:renderer": "npm run build -w @mastra/playground-ui && npm run dev:renderer -w @trading-agent/desktop",
     "dev:studio": "npm run dev:renderer",
-    "dev:desktop": "npm run dev -w trading-agent",
-    "dev": "npm run start -w trading-agent",
-    "start": "npm run start -w trading-agent",
-    "build:desktop": "npm run build -w trading-agent",
-    "restart": "./restart-dev.sh"
+    "dev:desktop": "npm run dev -w @trading-agent/desktop",
+    "dev": "npm run start -w @trading-agent/desktop",
+    "dev:all": "concurrently --kill-others --names \"AGENT,DESKTOP\" --prefix-colors \"cyan,magenta\" \"npm run dev:agent\" \"npm run dev:desktop\"",
+    "start": "npm run start -w @trading-agent/desktop",
+    "build": "turbo run build",
+    "build:desktop": "turbo run build --filter=@trading-agent/desktop",
+    "build:dist": "turbo run build --filter=@trading-agent/agent-server && turbo run build --filter=@trading-agent/desktop",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:run": "turbo run test:run",
+    "lint": "turbo run lint",
+    "kill-ports": "lsof -t -i :3000 -i :4111 | xargs kill -9 2>/dev/null || true",
+    "restart": "npm run kill-ports && npm run build -w @trading-agent/shared && npm run dev:all"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "turbo": "^2.10.4"
   }
 }

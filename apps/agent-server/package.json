@@ -1,14 +1,15 @@
 {
-  "name": "agent-server",
+  "name": "@trading-agent/agent-server",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "mastra dev",
-    "prebuild": "npm run build -w @trading-agent/shared",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && mastra build",
-    "start": "mastra start"
+    "start": "mastra start",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.2",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }

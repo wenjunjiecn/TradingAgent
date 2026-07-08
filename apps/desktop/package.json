@@ -1,5 +1,5 @@
 {
-  "name": "trading-agent",
+  "name": "@trading-agent/desktop",
   "productName": "Trading Agent",
   "version": "1.0.0",
   "description": "React + Vite + Electron desktop app for Mastra Trading Agent",
@@ -8,9 +8,7 @@
     "dev": "npm run build:electron && electron .",
     "start": "npm run dev",
     "dev:renderer": "vite --host 127.0.0.1 --port 3000",
-    "build": "npm run build:shared && npm run build:agent && npm run build:renderer && npm run build:electron",
-    "build:shared": "npm run build -w @trading-agent/shared",
-    "build:agent": "npm run build -w agent-server",
+    "build": "vite build && tsc -p tsconfig.electron.json",
     "build:renderer": "vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build:watch": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
