@@ -1,0 +1,26 @@
+{
+  "list": {
+    "title": "投研报告",
+    "subtitle": "查看和管理 AI 投研团队产出的分析报告",
+    "startResearch": "发起投研",
+    "searchPlaceholder": "搜索报告标题、结论...",
+    "symbolFilterPlaceholder": "按标的筛选",
+    "viewDetail": "查看详情",
+    "empty": "暂无报告",
+    "startFirst": "发起第一次投研",
+    "loadFailed": "加载报告失败"
+  },
+  "detail": {
+    "backToList": "返回报告列表",
+    "notFound": "报告未找到",
+    "notFoundDesc": "该报告可能已被删除",
+    "loadFailed": "加载报告失败",
+    "conclusion": "综合结论",
+    "opinions": "各角色分析",
+    "risks": "风险清单",
+    "tracking": "跟踪条件",
+    "technicalSignal": "技术交易信号",
+    "triggerCondition": "触发条件",
+    "suggestedAction": "建议动作"
+  }
+}

@@ -1,23 +1,24 @@
 import { Users, GitBranch, Swords, Layers, ScanLine } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { TeamCollaborationConfig, CollaborationPattern } from '@trading-agent/shared';
 
 const PATTERNS: {
   value: CollaborationPattern;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { value: 'council', label: '圆桌会议', description: 'N 个 Agent 并行分析，Supervisor 汇总', icon: Users },
-  { value: 'pipeline', label: '流水线', description: 'N 个 Agent 串行，上游输出传递给下游', icon: GitBranch },
-  { value: 'debate', label: '辩论', description: '多空两方对抗，Supervisor 裁决', icon: Swords },
-  { value: 'hierarchical', label: '层级委派', description: 'Supervisor 动态拆解并委派', icon: Layers },
-  { value: 'parallel-scan', label: '并行扫描', description: 'N 个 Agent 分别扫描不同目标', icon: ScanLine },
+  { value: 'council', labelKey: 'teams:patterns.council', descKey: 'teams:patterns.councilDesc', icon: Users },
+  { value: 'pipeline', labelKey: 'teams:patterns.pipeline', descKey: 'teams:patterns.pipelineDesc', icon: GitBranch },
+  { value: 'debate', labelKey: 'teams:patterns.debate', descKey: 'teams:patterns.debateDesc', icon: Swords },
+  { value: 'hierarchical', labelKey: 'teams:patterns.hierarchical', descKey: 'teams:patterns.hierarchicalDesc', icon: Layers },
+  { value: 'parallel-scan', labelKey: 'teams:patterns.parallelScan', descKey: 'teams:patterns.parallelScanDesc', icon: ScanLine },
 ];
 
-const OUTPUT_FORMATS = [
-  { value: 'research-report' as const, label: '投研报告' },
-  { value: 'summary' as const, label: '摘要' },
-  { value: 'custom' as const, label: '自定义' },
+const OUTPUT_FORMAT_KEYS = [
+  { value: 'research-report' as const, key: 'teams:outputFormats.research-report' },
+  { value: 'summary' as const, key: 'teams:outputFormats.summary' },
+  { value: 'custom' as const, key: 'teams:outputFormats.custom' },
 ];
 
 export function CollaborationConfigEditor({
@@ -27,6 +28,7 @@ export function CollaborationConfigEditor({
   config: TeamCollaborationConfig;
   onChange: (config: TeamCollaborationConfig) => void;
 }) {
+  const { t } = useTranslation('teams');
   const update = (updates: Partial<TeamCollaborationConfig>) => {
     onChange({ ...config, ...updates });
   };
@@ -35,7 +37,7 @@ export function CollaborationConfigEditor({
     <div className="space-y-4">
       {/* 协作模式选择 */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-neutral3">协作模式</label>
+        <label className="mb-2 block text-xs font-medium text-neutral3">{t('config.pattern')}</label>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {PATTERNS.map(p => {
             const Icon = p.icon;
@@ -53,8 +55,8 @@ export function CollaborationConfigEditor({
               >
                 <Icon className={`mt-0.5 size-4 shrink-0 ${isSelected ? 'text-accent1' : 'text-neutral3'}`} />
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-neutral5">{p.label}</div>
-                  <div className="mt-0.5 text-xs text-neutral3">{p.description}</div>
+                  <div className="text-sm font-medium text-neutral5">{t(p.labelKey)}</div>
+                  <div className="mt-0.5 text-xs text-neutral3">{t(p.descKey)}</div>
                 </div>
               </button>
             );
@@ -72,14 +74,14 @@ export function CollaborationConfigEditor({
               onChange={e => update({ passThroughContext: e.target.checked })}
               className="accent-accent1"
             />
-            上游结果传递给下游
+            {t('config.passThroughContext')}
           </label>
         </div>
       )}
 
       {config.pattern === 'debate' && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral3">辩论轮数</label>
+          <label className="mb-1 block text-xs font-medium text-neutral3">{t('config.rounds')}</label>
           <input
             type="number"
             min={1}
@@ -93,12 +95,12 @@ export function CollaborationConfigEditor({
 
       {config.pattern === 'hierarchical' && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral3">Supervisor 自定义指令（可选）</label>
+          <label className="mb-1 block text-xs font-medium text-neutral3">{t('config.supervisorInstructions')}</label>
           <textarea
             value={config.supervisorInstructions ?? ''}
             onChange={e => update({ supervisorInstructions: e.target.value || undefined })}
             rows={3}
-            placeholder="覆盖默认 Supervisor 指令..."
+            placeholder={t('config.supervisorInstructionsPlaceholder')}
             className="w-full rounded border border-border1 bg-surface2 px-3 py-2 text-sm text-neutral5 placeholder:text-neutral4"
           />
         </div>
@@ -106,7 +108,7 @@ export function CollaborationConfigEditor({
 
       {config.pattern === 'parallel-scan' && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral3">默认目标列表（逗号分隔）</label>
+          <label className="mb-1 block text-xs font-medium text-neutral3">{t('config.defaultTargets')}</label>
           <input
             type="text"
             value={config.targets?.join(', ') ?? ''}
@@ -137,42 +139,43 @@ export function TeamLevelConfig({
   customOutputSchema?: string;
   onChange: (updates: Record<string, any>) => void;
 }) {
+  const { t } = useTranslation('teams');
   return (
     <div className="space-y-4">
       {/* 团队级共享指令 */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-neutral3">团队级共享指令（可选）</label>
+        <label className="mb-1 block text-xs font-medium text-neutral3">{t('config.teamInstructions')}</label>
         <textarea
           value={teamInstructions ?? ''}
           onChange={e => onChange({ teamInstructions: e.target.value || undefined })}
           rows={3}
-          placeholder="注入所有成员的 prompt 前缀..."
+          placeholder={t('config.teamInstructionsPlaceholder')}
           className="w-full rounded border border-border1 bg-surface2 px-3 py-2 text-sm text-neutral5 placeholder:text-neutral4"
         />
       </div>
 
       {/* 静态共享上下文 */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-neutral3">静态共享上下文（可选）</label>
+        <label className="mb-1 block text-xs font-medium text-neutral3">{t('config.sharedContext')}</label>
         <textarea
           value={sharedContext ?? ''}
           onChange={e => onChange({ sharedContext: e.target.value || undefined })}
           rows={3}
-          placeholder="每次执行时注入的静态上下文..."
+          placeholder={t('config.sharedContextPlaceholder')}
           className="w-full rounded border border-border1 bg-surface2 px-3 py-2 text-sm text-neutral5 placeholder:text-neutral4"
         />
       </div>
 
       {/* 输出格式 */}
       <div className="flex items-center gap-4">
-        <label className="text-xs font-medium text-neutral3">输出格式</label>
+        <label className="text-xs font-medium text-neutral3">{t('config.outputFormat')}</label>
         <select
           value={outputFormat}
           onChange={e => onChange({ outputFormat: e.target.value })}
           className="rounded border border-border1 bg-surface2 px-2 py-1 text-sm text-neutral5"
         >
-          {OUTPUT_FORMATS.map(f => (
-            <option key={f.value} value={f.value}>{f.label}</option>
+          {OUTPUT_FORMAT_KEYS.map(f => (
+            <option key={f.value} value={f.value}>{t(f.key)}</option>
           ))}
         </select>
       </div>
@@ -180,7 +183,7 @@ export function TeamLevelConfig({
       {/* 自定义输出 Schema */}
       {outputFormat === 'custom' && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral3">自定义输出 JSON Schema</label>
+          <label className="mb-1 block text-xs font-medium text-neutral3">{t('config.customSchema')}</label>
           <textarea
             value={customOutputSchema ?? ''}
             onChange={e => onChange({ customOutputSchema: e.target.value || undefined })}
@@ -200,19 +203,19 @@ export function TeamLevelConfig({
             onChange={e => onChange({ sharedMemoryEnabled: e.target.checked })}
             className="accent-accent1"
           />
-          启用团队级共享 Memory
-          <span className="text-xs text-neutral3">（跨执行保留上下文）</span>
+          {t('config.sharedMemory')}
+          <span className="text-xs text-neutral3">{t('config.sharedMemoryHint')}</span>
         </label>
       </div>
 
       {/* 默认目标 */}
       <div>
-        <label className="mb-1 block text-xs font-medium text-neutral3">默认目标（可选）</label>
+        <label className="mb-1 block text-xs font-medium text-neutral3">{t('config.defaultTarget')}</label>
         <input
           type="text"
           value={defaultTarget ?? ''}
           onChange={e => onChange({ defaultTarget: e.target.value || undefined })}
-          placeholder="如 AAPL 或产品名..."
+          placeholder={t('config.defaultTargetPlaceholder')}
           className="w-full rounded border border-border1 bg-surface2 px-3 py-1.5 text-sm text-neutral5 placeholder:text-neutral4"
         />
       </div>

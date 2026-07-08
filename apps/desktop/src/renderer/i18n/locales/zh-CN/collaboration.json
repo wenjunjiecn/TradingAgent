@@ -1,0 +1,56 @@
+{
+  "title": "协同投研",
+  "subtitle": "配置 Agent 团队和协作模式，启动多角色投研分析",
+  "quickSelect": {
+    "title": "已有团队快速执行",
+    "manageTeams": "管理团队"
+  },
+  "quickConfigHint": "以下为快速配置模式，如需更多配置选项请使用 Agent Team 管理",
+  "symbol": {
+    "label": "分析标的",
+    "placeholder": "输入美股代码，如 AAPL, NVDA, TSLA"
+  },
+  "pattern": {
+    "label": "协作模式",
+    "council": {
+      "label": "圆桌会议",
+      "description": "N 个 Agent 并行分析同一标的，Supervisor 汇总各方观点"
+    },
+    "pipeline": {
+      "label": "流水线",
+      "description": "N 个 Agent 串行分析，上游输出传递给下游"
+    },
+    "debate": {
+      "label": "辩论",
+      "description": "多空两方对抗分析，Supervisor 裁决"
+    },
+    "hierarchical": {
+      "label": "层级委派",
+      "description": "Supervisor 动态拆解任务并委派子 Agent"
+    },
+    "parallelScan": {
+      "label": "并行扫描",
+      "description": "N 个 Agent 分别扫描不同标的，返回多份报告"
+    }
+  },
+  "agents": {
+    "title": "Agent 团队",
+    "selected": "已选 {{count}} 个",
+    "selectAll": "全选",
+    "clear": "清空",
+    "loading": "加载 Agent 列表...",
+    "loadFailed": "Agent 列表加载失败: {{error}}"
+  },
+  "actions": {
+    "start": "启动协同投研",
+    "running": "投研分析中...",
+    "success": "投研完成！正在跳转报告..."
+  },
+  "progress": {
+    "title": "执行进度",
+    "step1": { "label": "获取行情数据", "desc": "拉取 K 线并计算技术指标" },
+    "step2": { "label": "执行协作分析", "desc": "多角色 Agent 协同分析" },
+    "step3": { "label": "汇总产出报告", "desc": "Supervisor 综合研判" }
+  },
+  "error": "投研执行失败"
+}

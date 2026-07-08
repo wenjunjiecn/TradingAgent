@@ -1,0 +1,23 @@
+{
+  "theme": {
+    "title": "Theme",
+    "description": "Customize the appearance of the studio.",
+    "mode": "Theme mode",
+    "dark": "Dark",
+    "light": "Light",
+    "system": "System"
+  },
+  "connection": {
+    "title": "Mastra Connection",
+    "description": "Configure the Mastra instance URL, API prefix, and request headers used by the studio."
+  },
+  "providers": {
+    "title": "Model Providers",
+    "description": "Manage API keys and connections for AI model providers."
+  },
+  "language": {
+    "title": "Language",
+    "description": "Choose the interface language.",
+    "label": "Interface Language"
+  }
+}

@@ -13,6 +13,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useAgentConfigs, useStartCollaboration } from '@/lib/research-api';
 import { useTeamConfigs } from '@/lib/team-api';
@@ -22,38 +23,38 @@ import type { CollaborationPattern } from '@trading-agent/shared';
 
 const PATTERNS: {
   value: CollaborationPattern;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   {
     value: 'council',
-    label: '圆桌会议',
-    description: 'N 个 Agent 并行分析同一标的，Supervisor 汇总各方观点',
+    labelKey: 'collaboration:pattern.council.label',
+    descKey: 'collaboration:pattern.council.description',
     icon: Users,
   },
   {
     value: 'pipeline',
-    label: '流水线',
-    description: 'N 个 Agent 串行分析，上游输出传递给下游',
+    labelKey: 'collaboration:pattern.pipeline.label',
+    descKey: 'collaboration:pattern.pipeline.description',
     icon: GitBranch,
   },
   {
     value: 'debate',
-    label: '辩论',
-    description: '多空两方对抗分析，Supervisor 裁决',
+    labelKey: 'collaboration:pattern.debate.label',
+    descKey: 'collaboration:pattern.debate.description',
     icon: Swords,
   },
   {
     value: 'hierarchical',
-    label: '层级委派',
-    description: 'Supervisor 动态拆解任务并委派子 Agent',
+    labelKey: 'collaboration:pattern.hierarchical.label',
+    descKey: 'collaboration:pattern.hierarchical.description',
     icon: Layers,
   },
   {
     value: 'parallel-scan',
-    label: '并行扫描',
-    description: 'N 个 Agent 分别扫描不同标的，返回多份报告',
+    labelKey: 'collaboration:pattern.parallelScan.label',
+    descKey: 'collaboration:pattern.parallelScan.description',
     icon: ScanLine,
   },
 ];
@@ -130,17 +131,18 @@ function CollaborationProgress({
   state: CollabState;
   error: string | null;
 }) {
+  const { t } = useTranslation('collaboration');
   if (state === 'idle') return null;
 
   const steps = [
-    { label: '获取行情数据', desc: '拉取 K 线并计算技术指标' },
-    { label: '执行协作分析', desc: '多角色 Agent 协同分析' },
-    { label: '汇总产出报告', desc: 'Supervisor 综合研判' },
+    { label: t('progress.step1.label'), desc: t('progress.step1.desc') },
+    { label: t('progress.step2.label'), desc: t('progress.step2.desc') },
+    { label: t('progress.step3.label'), desc: t('progress.step3.desc') },
   ];
 
   return (
     <div className="rounded-xl border border-border1 bg-surface3 p-4">
-      <h3 className="font-display text-sm font-semibold text-neutral6 mb-3">执行进度</h3>
+      <h3 className="font-display text-sm font-semibold text-neutral6 mb-3">{t('progress.title')}</h3>
       <div className="flex flex-col gap-3">
         {steps.map((step, i) => {
           const isRunning = state === 'running';
@@ -190,6 +192,7 @@ function CollaborationProgress({
 // ── 主页面 ────────────────────────────────────────────────────────────
 
 export default function CollaborationPage() {
+  const { t } = useTranslation('collaboration');
   const navigate = useNavigate();
   const { data: agentsData, isLoading: agentsLoading, error: agentsError } = useAgentConfigs();
   const { data: teamsData } = useTeamConfigs();
@@ -241,17 +244,17 @@ export default function CollaborationPage() {
   return (
     <PageLayout className="gap-4 p-4">
       <div>
-        <h1 className="font-display text-xl font-bold text-neutral6">协同投研</h1>
-        <p className="text-sm text-neutral3">配置 Agent 团队和协作模式，启动多角色投研分析</p>
+        <h1 className="font-display text-xl font-bold text-neutral6">{t('title')}</h1>
+        <p className="text-sm text-neutral3">{t('subtitle')}</p>
       </div>
 
       {/* 已有 Team 快速选择 */}
       {teamsData?.teams && teamsData.teams.length > 0 && (
         <div className="rounded-xl border border-accent1/30 bg-accent1/5 p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-display text-sm font-semibold text-neutral6">已有团队快速执行</h3>
+            <h3 className="font-display text-sm font-semibold text-neutral6">{t('quickSelect.title')}</h3>
             <Button variant="ghost" size="sm" onClick={() => navigate('/teams')}>
-              管理团队
+              {t('quickSelect.manageTeams')}
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -263,7 +266,9 @@ export default function CollaborationPage() {
                 className="flex items-center gap-1.5 rounded-lg border border-border1 bg-surface3 px-3 py-1.5 text-sm text-neutral5 transition-colors hover:border-accent1 hover:bg-accent1/10"
               >
                 <span>{team.name}</span>
-                <span className="text-xs text-neutral3">{team.members.length} 成员</span>
+                <span className="text-xs text-neutral3">
+                  {t('common:members', { count: team.members.length })}
+                </span>
               </button>
             ))}
           </div>
@@ -272,26 +277,26 @@ export default function CollaborationPage() {
 
       {/* 快速配置区域 */}
       <div className="rounded-xl border border-border1 bg-surface3 p-3">
-        <p className="text-xs text-neutral3">以下为快速配置模式，如需更多配置选项请使用 Agent Team 管理</p>
+        <p className="text-xs text-neutral3">{t('quickConfigHint')}</p>
       </div>
 
       {/* 标的输入 */}
       <div className="rounded-xl border border-border1 bg-surface3 p-4">
         <label className="mb-2 block font-display text-sm font-semibold text-neutral6">
-          分析标的
+          {t('symbol.label')}
         </label>
         <input
           type="text"
           value={symbol}
           onChange={e => setSymbol(e.target.value.toUpperCase())}
-          placeholder="输入美股代码，如 AAPL, NVDA, TSLA"
+          placeholder={t('symbol.placeholder')}
           className="w-full rounded-lg border border-border1 bg-surface4 px-4 py-2.5 text-base font-medium text-neutral6 outline-none placeholder:text-neutral3 focus:border-accent1"
         />
       </div>
 
       {/* 协作模式选择 */}
       <div>
-        <h3 className="mb-3 font-display text-sm font-semibold text-neutral6">协作模式</h3>
+        <h3 className="mb-3 font-display text-sm font-semibold text-neutral6">{t('pattern.label')}</h3>
         <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
           {PATTERNS.map(p => {
             const isSelected = pattern === p.value;
@@ -310,8 +315,8 @@ export default function CollaborationPage() {
                   className={`size-5 shrink-0 ${isSelected ? 'text-accent1' : 'text-neutral3'}`}
                 />
                 <div>
-                  <span className="text-sm font-semibold text-neutral6">{p.label}</span>
-                  <p className="mt-0.5 text-xs text-neutral3">{p.description}</p>
+                  <span className="text-sm font-semibold text-neutral6">{t(p.labelKey)}</span>
+                  <p className="mt-0.5 text-xs text-neutral3">{t(p.descKey)}</p>
                 </div>
               </button>
             );
@@ -323,8 +328,10 @@ export default function CollaborationPage() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-display text-sm font-semibold text-neutral6">
-            Agent 团队
-            <span className="ml-2 text-xs text-neutral3">已选 {selectedAgentIds.length} 个</span>
+            {t('agents.title')}
+            <span className="ml-2 text-xs text-neutral3">
+              {t('agents.selected', { count: selectedAgentIds.length })}
+            </span>
           </h3>
           <div className="flex gap-2">
             <Button
@@ -332,21 +339,21 @@ export default function CollaborationPage() {
               size="sm"
               onClick={() => setSelectedAgentIds(agents.map(a => a.id))}
             >
-              全选
+              {t('agents.selectAll')}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setSelectedAgentIds([])}>
-              清空
+              {t('agents.clear')}
             </Button>
           </div>
         </div>
         {agentsLoading ? (
           <div className="flex h-32 items-center justify-center text-sm text-neutral3">
-            加载 Agent 列表...
+            {t('agents.loading')}
           </div>
         ) : agentsError ? (
           <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-500">
             <XCircle className="size-4 shrink-0" />
-            <span>Agent 列表加载失败: {agentsError.message}</span>
+            <span>{t('agents.loadFailed', { error: agentsError.message })}</span>
           </div>
         ) : (
           <AgentTeamPicker
@@ -367,17 +374,17 @@ export default function CollaborationPage() {
           {collabState === 'running' ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              投研分析中...
+              {t('actions.running')}
             </>
           ) : (
             <>
               <Play className="mr-2 size-4" />
-              启动协同投研
+              {t('actions.start')}
             </>
           )}
         </Button>
         {collabState === 'success' && (
-          <span className="text-sm text-green-500">投研完成！正在跳转报告...</span>
+          <span className="text-sm text-green-500">{t('actions.success')}</span>
         )}
       </div>
 
@@ -385,7 +392,7 @@ export default function CollaborationPage() {
       <CollaborationProgress state={collabState} error={collabError} />
 
       {collabError && (
-        <ErrorState title="投研执行失败" message={collabError} />
+        <ErrorState title={t('error')} message={collabError} />
       )}
     </PageLayout>
   );

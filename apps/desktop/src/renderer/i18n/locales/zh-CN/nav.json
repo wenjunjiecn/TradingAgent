@@ -1,0 +1,19 @@
+{
+  "sections": {
+    "research": "投研",
+    "system": "系统"
+  },
+  "items": {
+    "dashboard": "投研看板",
+    "collaboration": "协同投研",
+    "agentTeam": "Agent Team",
+    "reports": "投研报告",
+    "marketData": "行情数据",
+    "agentConfig": "Agent配置",
+    "workflows": "Workflows",
+    "mcpServers": "MCP Servers",
+    "tools": "Tools",
+    "skills": "Skills",
+    "settings": "Settings"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "title": "Market Data",
+  "subtitle": "View US stock K-line charts, technical indicators, and signal analysis",
+  "searchPlaceholder": "Enter ticker, e.g. AAPL",
+  "searchButton": "Search",
+  "latestPrice": "Latest Price",
+  "dataPoints": "{{count}} data points",
+  "indicators": {
+    "title": "Technical Indicators",
+    "ma20": "MA20",
+    "ma60": "MA60",
+    "rsi": "RSI(14)",
+    "macd": "MACD",
+    "macdSignal": "Signal",
+    "macdHistogram": "MACD Histogram",
+    "rsiOverbought": "Overbought zone",
+    "rsiOversold": "Oversold zone",
+    "rsiNeutral": "Normal range",
+    "ma20AboveNote": "Above MA60 (Golden Cross)",
+    "ma20BelowNote": "Below MA60 (Death Cross)",
+    "ma60Note": "Mid-term MA",
+    "macdHistogramNote": "Histogram {{value}}",
+    "macdSignalNote": "MACD Signal line"
+  },
+  "signal": {
+    "title": "Technical Signal",
+    "hold": "HOLD",
+    "buy": "BUY",
+    "sell": "SELL",
+    "holdReason": "Mixed signals, maintaining a wait-and-see stance.",
+    "buyReasonOversoldMacd": "RSI={{rsi}} oversold + MACD histogram turned positive, bullish momentum improving",
+    "sellReasonOverboughtMacd": "RSI={{rsi}} overbought + MACD histogram negative, momentum weakening",
+    "buyReasonMa": "MA20 above MA60, mid-term trend bullish, RSI not overheated",
+    "sellReasonMa": "MA20 below MA60, mid-term trend bearish"
+  },
+  "emptyHint": "Enter a ticker to view market data",
+  "loadingSymbol": "Loading {{symbol}} data...",
+  "errorTitle": "Failed to fetch data"
+}

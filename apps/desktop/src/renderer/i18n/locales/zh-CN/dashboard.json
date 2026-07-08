@@ -1,0 +1,42 @@
+{
+  "title": "投研看板",
+  "subtitle": "个人 AI 投研 Multi-Agent 系统 · 投资研究概览",
+  "watchlist": {
+    "title": "自选股",
+    "marketLink": "行情",
+    "empty": "暂无自选股，添加一个开始跟踪",
+    "placeholder": "添加股票代码，如 AAPL",
+    "addButton": "添加"
+  },
+  "stats": {
+    "totalReports": "报告总数",
+    "coveredSymbols": "覆盖标的",
+    "buySuggestions": "买入建议",
+    "topSymbols": "热门标的",
+    "reportsUnit": "份"
+  },
+  "recentReports": {
+    "title": "最近投研报告",
+    "viewAll": "全部",
+    "empty": "暂无报告，去发起一次协同投研",
+    "startResearch": "开始投研"
+  },
+  "quickActions": {
+    "startCollaboration": {
+      "label": "发起协同投研",
+      "description": "选择标的和 Agent 团队，一键启动多角色协作分析"
+    },
+    "manageTeam": {
+      "label": "管理 Agent Team",
+      "description": "创建和管理多 Agent 协作团队，配置协作模式"
+    },
+    "viewMarket": {
+      "label": "查看行情数据",
+      "description": "K 线图表、技术指标、基本面数据一屏总览"
+    },
+    "browseReports": {
+      "label": "浏览投研报告",
+      "description": "查看历史报告，追踪结论和跟踪条件"
+    }
+  }
+}

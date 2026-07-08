@@ -1,4 +1,5 @@
 import { CheckCircle2, GripVertical } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { TeamMember, TeamMemberRole } from '@trading-agent/shared';
 
 interface AgentInfo {
@@ -8,18 +9,18 @@ interface AgentInfo {
   metadata?: { role?: string; summary?: string };
 }
 
-const ROLES: { value: TeamMemberRole; label: string }[] = [
-  { value: 'leader', label: '领导者' },
-  { value: 'analyst', label: '分析者' },
-  { value: 'reviewer', label: '审查者' },
-  { value: 'executor', label: '执行者' },
-  { value: 'observer', label: '观察者' },
+const ROLE_KEYS: { value: TeamMemberRole; key: string }[] = [
+  { value: 'leader', key: 'teams:roles.leader' },
+  { value: 'analyst', key: 'teams:roles.analyst' },
+  { value: 'reviewer', key: 'teams:roles.reviewer' },
+  { value: 'executor', key: 'teams:roles.executor' },
+  { value: 'observer', key: 'teams:roles.observer' },
 ];
 
-const SIDES = [
-  { value: 'bull', label: '看多' },
-  { value: 'bear', label: '看空' },
-  { value: 'neutral', label: '中立' },
+const SIDE_KEYS = [
+  { value: 'bull', key: 'teams:sides.bull' },
+  { value: 'bear', key: 'teams:sides.bear' },
+  { value: 'neutral', key: 'teams:sides.neutral' },
 ] as const;
 
 export function TeamMemberPicker({
@@ -33,6 +34,7 @@ export function TeamMemberPicker({
   onChange: (members: TeamMember[]) => void;
   pattern: string;
 }) {
+  const { t } = useTranslation('teams');
   const toggleMember = (agentId: string) => {
     const existing = members.find(m => m.agentId === agentId);
     if (existing) {
@@ -57,7 +59,7 @@ export function TeamMemberPicker({
     <div className="space-y-4">
       {/* 可选 Agent 列表 */}
       <div>
-        <h4 className="mb-2 text-xs font-medium text-neutral3">可选 Agent</h4>
+        <h4 className="mb-2 text-xs font-medium text-neutral3">{t('edit.availableAgents')}</h4>
         <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
           {agents.map(agent => {
             const isSelected = members.some(m => m.agentId === agent.id);
@@ -102,7 +104,7 @@ export function TeamMemberPicker({
       {sortedMembers.length > 0 && (
         <div>
           <h4 className="mb-2 text-xs font-medium text-neutral3">
-            团队成员（{sortedMembers.length}）
+            {t('edit.selectedMembers', { count: sortedMembers.length })}
           </h4>
           <div className="space-y-2">
             {sortedMembers.map((member, idx) => {
@@ -129,8 +131,8 @@ export function TeamMemberPicker({
                     onChange={e => updateMember(member.agentId, { role: e.target.value as TeamMemberRole })}
                     className="rounded border border-border1 bg-surface2 px-2 py-1 text-xs text-neutral5"
                   >
-                    {ROLES.map(r => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
+                    {ROLE_KEYS.map(r => (
+                      <option key={r.value} value={r.value}>{t(r.key)}</option>
                     ))}
                   </select>
 
@@ -141,15 +143,15 @@ export function TeamMemberPicker({
                       onChange={e => updateMember(member.agentId, { side: e.target.value as 'bull' | 'bear' | 'neutral' })}
                       className="rounded border border-border1 bg-surface2 px-2 py-1 text-xs text-neutral5"
                     >
-                      {SIDES.map(s => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
+                      {SIDE_KEYS.map(s => (
+                        <option key={s.value} value={s.value}>{t(s.key)}</option>
                       ))}
                     </select>
                   )}
 
                   {/* 权重滑块 */}
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-neutral3">权重</span>
+                    <span className="text-xs text-neutral3">{t('edit.weight')}</span>
                     <input
                       type="range"
                       min={0}
@@ -165,7 +167,7 @@ export function TeamMemberPicker({
                   {/* 别名输入 */}
                   <input
                     type="text"
-                    placeholder="别名(可选)"
+                    placeholder={t('edit.aliasPlaceholder')}
                     value={member.alias ?? ''}
                     onChange={e => updateMember(member.agentId, { alias: e.target.value || undefined })}
                     className="w-24 rounded border border-border1 bg-surface2 px-2 py-1 text-xs text-neutral5 placeholder:text-neutral4"
@@ -198,7 +200,7 @@ export function TeamMemberPicker({
                     onClick={() => toggleMember(member.agentId)}
                     className="ml-auto rounded border border-red-500/30 px-2 py-0.5 text-xs text-red-400 hover:bg-red-500/10"
                   >
-                    移除
+                    {t('edit.remove')}
                   </button>
                 </div>
               );

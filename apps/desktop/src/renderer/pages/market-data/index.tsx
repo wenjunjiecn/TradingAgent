@@ -3,6 +3,7 @@ import { ErrorState } from '@mastra/playground-ui/components/ErrorState';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
 import { Search, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { useMarketData, useIndicators } from '@/lib/research-api';
 import type { KLineData, Indicators } from '@trading-agent/shared';
@@ -129,6 +130,7 @@ function IndicatorPanel({
   indicators: Indicators;
   latestPrice: number;
 }) {
+  const { t } = useTranslation('market');
   const ma20Above = indicators.ma20 > indicators.ma60;
   const rsiOverbought = indicators.rsi > 70;
   const rsiOversold = indicators.rsi < 30;
@@ -136,34 +138,34 @@ function IndicatorPanel({
 
   const items = [
     {
-      label: 'MA20',
+      label: t('indicators.ma20'),
       value: indicators.ma20.toFixed(2),
       signal: ma20Above ? 'bullish' : 'bearish',
-      note: ma20Above ? '高于 MA60（金叉）' : '低于 MA60（死叉）',
+      note: ma20Above ? t('indicators.ma20AboveNote') : t('indicators.ma20BelowNote'),
     },
     {
-      label: 'MA60',
+      label: t('indicators.ma60'),
       value: indicators.ma60.toFixed(2),
       signal: 'neutral',
-      note: '中期均线',
+      note: t('indicators.ma60Note'),
     },
     {
-      label: 'RSI(14)',
+      label: t('indicators.rsi'),
       value: indicators.rsi.toFixed(2),
       signal: rsiOverbought ? 'bearish' : rsiOversold ? 'bullish' : 'neutral',
-      note: rsiOverbought ? '超买区域' : rsiOversold ? '超卖区域' : '正常区间',
+      note: rsiOverbought ? t('indicators.rsiOverbought') : rsiOversold ? t('indicators.rsiOversold') : t('indicators.rsiNeutral'),
     },
     {
-      label: 'MACD',
+      label: t('indicators.macd'),
       value: indicators.macd.toFixed(4),
       signal: macdBullish ? 'bullish' : 'bearish',
-      note: `柱状图 ${indicators.macdHistogram.toFixed(4)}`,
+      note: t('indicators.macdHistogramNote', { value: indicators.macdHistogram.toFixed(4) }),
     },
     {
-      label: 'Signal',
+      label: t('indicators.macdSignal'),
       value: indicators.macdSignal.toFixed(4),
       signal: 'neutral',
-      note: 'MACD 信号线',
+      note: t('indicators.macdSignalNote'),
     },
   ];
 
@@ -210,37 +212,38 @@ function SignalSummary({
   latestPrice: number;
   symbol: string;
 }) {
+  const { t } = useTranslation('market');
   const ma20Above = indicators.ma20 > indicators.ma60;
   const rsiOversold = indicators.rsi < 30;
   const rsiOverbought = indicators.rsi > 70;
   const macdBullish = indicators.macdHistogram > 0;
 
-  let action = 'HOLD';
-  let reason = '趋势信号不够一致，暂时维持观望。';
+  let action = t('signal.hold');
+  let reason = t('signal.holdReason');
   let color = 'text-yellow-500';
 
   if (rsiOversold && macdBullish) {
-    action = 'BUY';
-    reason = `RSI=${indicators.rsi.toFixed(1)} 超卖 + MACD 柱转正，多头动能改善`;
+    action = t('signal.buy');
+    reason = t('signal.buyReasonOversoldMacd', { rsi: indicators.rsi.toFixed(1) });
     color = 'text-green-500';
   } else if (rsiOverbought && !macdBullish) {
-    action = 'SELL';
-    reason = `RSI=${indicators.rsi.toFixed(1)} 超买 + MACD 柱为负，动能走弱`;
+    action = t('signal.sell');
+    reason = t('signal.sellReasonOverboughtMacd', { rsi: indicators.rsi.toFixed(1) });
     color = 'text-red-500';
   } else if (ma20Above && indicators.rsi >= 40 && indicators.rsi <= 60) {
-    action = 'BUY';
-    reason = `MA20 高于 MA60，中期趋势偏多，RSI 未过热`;
+    action = t('signal.buy');
+    reason = t('signal.buyReasonMa');
     color = 'text-green-500';
   } else if (!ma20Above && indicators.rsi >= 40 && indicators.rsi <= 60) {
-    action = 'SELL';
-    reason = `MA20 低于 MA60，中期趋势偏弱`;
+    action = t('signal.sell');
+    reason = t('signal.sellReasonMa');
     color = 'text-red-500';
   }
 
   return (
     <div className="flex items-center gap-4 rounded-xl border border-border1 bg-surface3 p-4">
       <div className="flex flex-col">
-        <span className="text-xs text-neutral3">技术信号</span>
+        <span className="text-xs text-neutral3">{t('signal.title')}</span>
         <span className={`font-display text-3xl font-bold ${color}`}>{action}</span>
       </div>
       <div className="flex-1 border-l border-border1 pl-4">
@@ -254,6 +257,7 @@ function SignalSummary({
 // ── 主页面 ────────────────────────────────────────────────────────────
 
 export default function MarketDataPage() {
+  const { t } = useTranslation('market');
   const [searchParams, setSearchParams] = useSearchParams();
   const urlSymbol = searchParams.get('symbol');
   const [input, setInput] = useState(urlSymbol ?? '');
@@ -277,8 +281,8 @@ export default function MarketDataPage() {
   return (
     <PageLayout className="gap-4 p-4">
       <div>
-        <h1 className="font-display text-xl font-bold text-neutral6">行情数据</h1>
-        <p className="text-sm text-neutral3">查看美股 K 线图表、技术指标和综合信号判断</p>
+        <h1 className="font-display text-xl font-bold text-neutral6">{t('title')}</h1>
+        <p className="text-sm text-neutral3">{t('subtitle')}</p>
       </div>
 
       {/* 搜索栏 */}
@@ -289,12 +293,12 @@ export default function MarketDataPage() {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value.toUpperCase())}
-            placeholder="输入股票代码，如 AAPL"
+            placeholder={t('searchPlaceholder')}
             className="w-full rounded-lg border border-border1 bg-surface3 py-2.5 pl-10 pr-3 text-sm font-medium text-neutral6 outline-none placeholder:text-neutral3 focus:border-accent1"
           />
         </div>
         <Button type="submit" variant="default">
-          查询
+          {t('searchButton')}
         </Button>
       </form>
 
@@ -321,7 +325,7 @@ export default function MarketDataPage() {
       {/* 错误提示 */}
       {(mdError || indError) && (
         <ErrorState
-          title="获取数据失败"
+          title={t('errorTitle')}
           message={(mdError || indError)?.message ?? 'Unknown error'}
         />
       )}
@@ -330,12 +334,12 @@ export default function MarketDataPage() {
       {!activeSymbol ? (
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-neutral3">
           <Search className="size-12 opacity-30" />
-          <span className="text-sm">输入股票代码开始查看行情数据</span>
+          <span className="text-sm">{t('emptyHint')}</span>
         </div>
       ) : mdLoading || indLoading ? (
         <div className="flex h-64 items-center justify-center gap-2 text-sm text-neutral3">
           <Loader2 className="size-5 animate-spin" />
-          加载 {activeSymbol} 数据中...
+          {t('loadingSymbol', { symbol: activeSymbol })}
         </div>
       ) : marketData?.data && indData ? (
         <div className="flex flex-col gap-4">
@@ -348,7 +352,7 @@ export default function MarketDataPage() {
               ${marketData.data.latestPrice.toFixed(2)}
             </span>
             <span className="text-sm text-neutral3">
-              {marketData.data.dataPoints} 个数据点
+              {t('dataPoints', { count: marketData.data.dataPoints })}
             </span>
           </div>
 

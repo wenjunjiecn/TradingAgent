@@ -1,0 +1,39 @@
+{
+  "title": "行情数据",
+  "subtitle": "查看美股 K 线图表、技术指标和综合信号判断",
+  "searchPlaceholder": "输入股票代码，如 AAPL",
+  "searchButton": "查询",
+  "latestPrice": "最新价",
+  "dataPoints": "{{count}} 个数据点",
+  "indicators": {
+    "title": "技术指标",
+    "ma20": "MA20",
+    "ma60": "MA60",
+    "rsi": "RSI(14)",
+    "macd": "MACD",
+    "macdSignal": "Signal",
+    "macdHistogram": "MACD 柱",
+    "rsiOverbought": "超买区域",
+    "rsiOversold": "超卖区域",
+    "rsiNeutral": "正常区间",
+    "ma20AboveNote": "高于 MA60（金叉）",
+    "ma20BelowNote": "低于 MA60（死叉）",
+    "ma60Note": "中期均线",
+    "macdHistogramNote": "柱状图 {{value}}",
+    "macdSignalNote": "MACD 信号线"
+  },
+  "signal": {
+    "title": "技术信号",
+    "hold": "HOLD",
+    "buy": "BUY",
+    "sell": "SELL",
+    "holdReason": "趋势信号不够一致，暂时维持观望。",
+    "buyReasonOversoldMacd": "RSI={{rsi}} 超卖 + MACD 柱转正，多头动能改善",
+    "sellReasonOverboughtMacd": "RSI={{rsi}} 超买 + MACD 柱为负，动能走弱",
+    "buyReasonMa": "MA20 高于 MA60，中期趋势偏多，RSI 未过热",
+    "sellReasonMa": "MA20 低于 MA60，中期趋势偏弱"
+  },
+  "emptyHint": "输入股票代码开始查看行情数据",
+  "loadingSymbol": "加载 {{symbol}} 数据中...",
+  "errorTitle": "获取数据失败"
+}

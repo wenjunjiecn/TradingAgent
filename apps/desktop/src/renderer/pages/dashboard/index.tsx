@@ -2,6 +2,7 @@ import { Button } from '@mastra/playground-ui/components/Button';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
 import { ArrowRight, FileText, TrendingUp, Users, Activity, Trash2, UsersRound } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useDashboardData, useDeleteReport } from '@/lib/research-api';
 import type { ReportSummary } from '@/lib/research-api';
@@ -72,6 +73,7 @@ function StatCard({
 // ── 自选股面板 ────────────────────────────────────────────────────────
 
 function WatchlistPanel() {
+  const { t } = useTranslation('dashboard');
   const { watchlist, add, remove } = useWatchlist();
   const [input, setInput] = useState('');
   const navigate = useNavigate();
@@ -87,9 +89,9 @@ function WatchlistPanel() {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border1 bg-surface3 p-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-sm font-semibold text-neutral6">自选股</h3>
+        <h3 className="font-display text-sm font-semibold text-neutral6">{t('watchlist.title')}</h3>
         <Button variant="ghost" size="sm" onClick={() => navigate('/market-data')}>
-          行情 <ArrowRight className="ml-1 size-3" />
+          {t('watchlist.marketLink')} <ArrowRight className="ml-1 size-3" />
         </Button>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -116,7 +118,7 @@ function WatchlistPanel() {
           </div>
         ))}
         {watchlist.length === 0 && (
-          <span className="text-sm text-neutral3">暂无自选股，添加一个开始跟踪</span>
+          <span className="text-sm text-neutral3">{t('watchlist.empty')}</span>
         )}
       </div>
       <form onSubmit={handleSubmit} className="flex gap-2">
@@ -124,11 +126,11 @@ function WatchlistPanel() {
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="添加股票代码，如 AAPL"
+          placeholder={t('watchlist.placeholder')}
           className="flex-1 rounded-lg border border-border1 bg-surface4 px-3 py-1.5 text-sm text-neutral5 outline-none placeholder:text-neutral3 focus:border-accent1"
         />
         <Button type="submit" variant="default" size="sm">
-          添加
+          {t('watchlist.addButton')}
         </Button>
       </form>
     </div>
@@ -151,25 +153,26 @@ function actionColor(action: string) {
 }
 
 function RecentReportsPanel({ reports, isLoading }: { reports: ReportSummary[]; isLoading: boolean }) {
+  const { t } = useTranslation('dashboard');
   const deleteReport = useDeleteReport();
   const navigate = useNavigate();
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border1 bg-surface3 p-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-sm font-semibold text-neutral6">最近投研报告</h3>
+        <h3 className="font-display text-sm font-semibold text-neutral6">{t('recentReports.title')}</h3>
         <Button variant="ghost" size="sm" onClick={() => navigate('/reports')}>
-          全部 <ArrowRight className="ml-1 size-3" />
+          {t('recentReports.viewAll')} <ArrowRight className="ml-1 size-3" />
         </Button>
       </div>
       {isLoading ? (
-        <div className="flex h-32 items-center justify-center text-sm text-neutral3">加载中...</div>
+        <div className="flex h-32 items-center justify-center text-sm text-neutral3">{t('status.loading', { ns: 'common' })}</div>
       ) : reports.length === 0 ? (
         <div className="flex h-32 flex-col items-center justify-center gap-2 text-sm text-neutral3">
           <FileText className="size-8 opacity-40" />
-          <span>暂无报告，去发起一次协同投研</span>
+          <span>{t('recentReports.empty')}</span>
           <Button variant="ghost" size="sm" onClick={() => navigate('/collaboration')}>
-            开始投研
+            {t('recentReports.startResearch')}
           </Button>
         </div>
       ) : (
@@ -228,6 +231,7 @@ function ResearchStatsPanel({
   isLoading: boolean;
   isFetching: boolean;
 }) {
+  const { t } = useTranslation('dashboard');
   const topSymbols = useMemo(() => {
     if (!stats?.bySymbol) return [];
     return Object.entries(stats.bySymbol)
@@ -241,21 +245,21 @@ function ResearchStatsPanel({
   return (
     <div className="grid grid-cols-3 gap-3">
       <StatCard
-        label="报告总数"
+        label={t('stats.totalReports')}
         value={showShimmer ? '—' : stats?.total ?? 0}
         icon={FileText}
         color="text-blue-400"
         loading={showShimmer || (isFetching && !stats)}
       />
       <StatCard
-        label="覆盖标的"
+        label={t('stats.coveredSymbols')}
         value={showShimmer ? '—' : Object.keys(stats?.bySymbol ?? {}).length}
         icon={Activity}
         color="text-purple-400"
         loading={showShimmer || (isFetching && !stats)}
       />
       <StatCard
-        label="买入建议"
+        label={t('stats.buySuggestions')}
         value={showShimmer ? '—' : stats?.byAction?.BUY ?? 0}
         icon={TrendingUp}
         color="text-green-400"
@@ -263,7 +267,7 @@ function ResearchStatsPanel({
       />
       {topSymbols.length > 0 && (
         <div className="col-span-3 rounded-xl border border-border1 bg-surface3 p-4">
-          <h3 className="mb-2 font-display text-sm font-semibold text-neutral6">热门标的</h3>
+          <h3 className="mb-2 font-display text-sm font-semibold text-neutral6">{t('stats.topSymbols')}</h3>
           <div className="flex flex-wrap gap-2">
             {topSymbols.map(([symbol, count]) => (
               <div
@@ -271,7 +275,7 @@ function ResearchStatsPanel({
                 className="flex items-center gap-1.5 rounded-lg border border-border1 bg-surface4 px-3 py-1"
               >
                 <span className="text-sm font-medium text-neutral5">{symbol}</span>
-                <span className="text-xs text-neutral3">{count} 份</span>
+                <span className="text-xs text-neutral3">{count} {t('stats.reportsUnit')}</span>
               </div>
             ))}
           </div>
@@ -284,33 +288,34 @@ function ResearchStatsPanel({
 // ── 快捷操作面板 ──────────────────────────────────────────────────────
 
 function QuickActionsPanel() {
+  const { t } = useTranslation('dashboard');
   const navigate = useNavigate();
 
   const actions = [
     {
-      label: '发起协同投研',
-      description: '选择标的和 Agent 团队，一键启动多角色协作分析',
+      label: t('quickActions.startCollaboration.label'),
+      description: t('quickActions.startCollaboration.description'),
       icon: Users,
       color: 'text-blue-400',
       onClick: () => navigate('/collaboration'),
     },
     {
-      label: '管理 Agent Team',
-      description: '创建和管理多 Agent 协作团队，配置协作模式',
+      label: t('quickActions.manageTeam.label'),
+      description: t('quickActions.manageTeam.description'),
       icon: UsersRound,
       color: 'text-amber-400',
       onClick: () => navigate('/teams'),
     },
     {
-      label: '查看行情数据',
-      description: 'K 线图表、技术指标、基本面数据一屏总览',
+      label: t('quickActions.viewMarket.label'),
+      description: t('quickActions.viewMarket.description'),
       icon: TrendingUp,
       color: 'text-green-400',
       onClick: () => navigate('/market-data'),
     },
     {
-      label: '浏览投研报告',
-      description: '查看历史报告，追踪结论和跟踪条件',
+      label: t('quickActions.browseReports.label'),
+      description: t('quickActions.browseReports.description'),
       icon: FileText,
       color: 'text-purple-400',
       onClick: () => navigate('/reports'),
@@ -338,6 +343,7 @@ function QuickActionsPanel() {
 // ── Dashboard 主页面 ──────────────────────────────────────────────────
 
 export default function Dashboard() {
+  const { t } = useTranslation('dashboard');
   // 一次聚合请求获取统计 + 最近报告摘要，替代原来 2 次独立请求
   const { data, isLoading, isFetching } = useDashboardData(8);
 
@@ -345,8 +351,8 @@ export default function Dashboard() {
     <PageLayout className="gap-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl font-bold text-neutral6">投研看板</h1>
-          <p className="text-sm text-neutral3">个人 AI 投研 Multi-Agent 系统 · 投资研究概览</p>
+          <h1 className="font-display text-xl font-bold text-neutral6">{t('title')}</h1>
+          <p className="text-sm text-neutral3">{t('subtitle')}</p>
         </div>
       </div>
 

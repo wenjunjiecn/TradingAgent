@@ -4,6 +4,7 @@ import type { NavLink } from '@mastra/playground-ui/components/MainSidebar';
 import { useKeyboardShortcutLabel } from '@mastra/playground-ui/hooks/use-keyboard-shortcut-label';
 import { cn } from '@mastra/playground-ui/utils/cn';
 import { Search, Wrench } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
 import { useAgentBuilderSidebarVisibility } from '@/domains/agent-builder/hooks/use-agent-builder-sidebar-visibility';
 import { AuthStatus } from '@/domains/auth/components/auth-status';
@@ -27,9 +28,9 @@ declare global {
   }
 }
 
-function toSidebarLink(item: NavItem): NavLink {
+function toSidebarLink(item: NavItem, t: (key: string) => string): NavLink {
   const { Icon } = item;
-  return { name: item.name, url: item.url, icon: <Icon /> };
+  return { name: t(item.name), url: item.url, icon: <Icon /> };
 }
 
 function getIsLinkActive(item: NavItem, pathname: string): boolean {
@@ -41,6 +42,7 @@ function getIsLinkActive(item: NavItem, pathname: string): boolean {
 
 export function AppSidebar() {
   const { Link } = useLinkComponent();
+  const { t: tNav } = useTranslation('nav');
   const { state, isMobile, setOpenMobile } = useMainSidebar();
   const { setOpen: setNavigationCommandOpen } = useNavigationCommand({ enableShortcut: false });
   const commandShortcutLabel = useKeyboardShortcutLabel('K');
@@ -192,7 +194,7 @@ export function AppSidebar() {
             <MainSidebar.NavSection key={section.key}>
               {section.title ? (
                 <MainSidebar.NavHeader LinkComponent={Link} state={state} href={section.href} isActive={isHeaderActive}>
-                  {section.title}
+                  {tNav(section.title)}
                 </MainSidebar.NavHeader>
               ) : null}
               <MainSidebar.NavList>
@@ -201,7 +203,7 @@ export function AppSidebar() {
                     key={item.name}
                     LinkComponent={Link}
                     state={state}
-                    link={toSidebarLink(item)}
+                    link={toSidebarLink(item, tNav)}
                     isActive={getIsLinkActive(item, pathname)}
                   />
                 ))}
@@ -219,7 +221,7 @@ export function AppSidebar() {
                 key={item.name}
                 LinkComponent={Link}
                 state={state}
-                link={toSidebarLink(item)}
+                link={toSidebarLink(item, tNav)}
                 isActive={getIsLinkActive(item, pathname)}
               />
             ))}

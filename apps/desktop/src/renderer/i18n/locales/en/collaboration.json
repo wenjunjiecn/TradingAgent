@@ -1,0 +1,56 @@
+{
+  "title": "Collaboration",
+  "subtitle": "Configure agent team and collaboration pattern to launch multi-role research",
+  "quickSelect": {
+    "title": "Quick Execute with Existing Teams",
+    "manageTeams": "Manage Teams"
+  },
+  "quickConfigHint": "This is a quick configuration mode. Use Agent Team management for more options.",
+  "symbol": {
+    "label": "Target Symbol",
+    "placeholder": "Enter US stock ticker, e.g. AAPL, NVDA, TSLA"
+  },
+  "pattern": {
+    "label": "Collaboration Pattern",
+    "council": {
+      "label": "Council",
+      "description": "N agents analyze the same target in parallel, Supervisor summarizes"
+    },
+    "pipeline": {
+      "label": "Pipeline",
+      "description": "N agents analyze serially, upstream output passed downstream"
+    },
+    "debate": {
+      "label": "Debate",
+      "description": "Bull vs Bear adversarial analysis, Supervisor adjudicates"
+    },
+    "hierarchical": {
+      "label": "Hierarchical",
+      "description": "Supervisor dynamically decomposes tasks and delegates to sub-agents"
+    },
+    "parallelScan": {
+      "label": "Parallel Scan",
+      "description": "N agents scan different targets, returns multiple reports"
+    }
+  },
+  "agents": {
+    "title": "Agent Team",
+    "selected": "{{count}} selected",
+    "selectAll": "Select All",
+    "clear": "Clear",
+    "loading": "Loading agent list...",
+    "loadFailed": "Failed to load agents: {{error}}"
+  },
+  "actions": {
+    "start": "Start Collaboration",
+    "running": "Analyzing...",
+    "success": "Research complete! Redirecting to report..."
+  },
+  "progress": {
+    "title": "Execution Progress",
+    "step1": { "label": "Fetch Market Data", "desc": "Pull K-lines and calculate indicators" },
+    "step2": { "label": "Collaborative Analysis", "desc": "Multi-role agents analyzing" },
+    "step3": { "label": "Generate Report", "desc": "Supervisor synthesizes findings" }
+  },
+  "error": "Research execution failed"
+}

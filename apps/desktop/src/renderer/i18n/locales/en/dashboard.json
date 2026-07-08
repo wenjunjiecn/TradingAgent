@@ -1,0 +1,42 @@
+{
+  "title": "Research Dashboard",
+  "subtitle": "Personal AI Investment Research Multi-Agent System · Overview",
+  "watchlist": {
+    "title": "Watchlist",
+    "marketLink": "Market",
+    "empty": "No watchlist items yet. Add one to start tracking.",
+    "placeholder": "Add ticker, e.g. AAPL",
+    "addButton": "Add"
+  },
+  "stats": {
+    "totalReports": "Total Reports",
+    "coveredSymbols": "Symbols Covered",
+    "buySuggestions": "Buy Signals",
+    "topSymbols": "Top Symbols",
+    "reportsUnit": "reports"
+  },
+  "recentReports": {
+    "title": "Recent Reports",
+    "viewAll": "All",
+    "empty": "No reports yet. Start a collaboration to generate one.",
+    "startResearch": "Start Research"
+  },
+  "quickActions": {
+    "startCollaboration": {
+      "label": "Start Collaboration",
+      "description": "Select target and agent team to launch multi-role analysis"
+    },
+    "manageTeam": {
+      "label": "Manage Agent Teams",
+      "description": "Create and manage multi-agent teams, configure collaboration patterns"
+    },
+    "viewMarket": {
+      "label": "View Market Data",
+      "description": "K-line charts, technical indicators, and fundamentals at a glance"
+    },
+    "browseReports": {
+      "label": "Browse Reports",
+      "description": "View historical reports, track conclusions and conditions"
+    }
+  }
+}

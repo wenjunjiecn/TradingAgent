@@ -1,0 +1,31 @@
+{
+  "actions": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "close": "关闭",
+    "back": "返回",
+    "confirm": "确认",
+    "confirmDelete": "确认删除",
+    "edit": "编辑",
+    "create": "创建",
+    "search": "搜索",
+    "refresh": "刷新",
+    "export": "导出",
+    "selectAll": "全选",
+    "clear": "清空",
+    "start": "启动",
+    "stop": "停止"
+  },
+  "status": {
+    "loading": "加载中...",
+    "noData": "暂无数据",
+    "error": "加载失败",
+    "success": "操作成功",
+    "failed": "操作失败"
+  },
+  "confidence": "信心度",
+  "pattern": "协作模式",
+  "members": "成员",
+  "report": "报告"
+}

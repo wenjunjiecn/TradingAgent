@@ -3,6 +3,7 @@ import { ErrorState } from '@mastra/playground-ui/components/ErrorState';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
 import { FileText, Search, Trash2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useReports, useDeleteReport } from '@/lib/research-api';
 import type { ReportSummary } from '@/lib/research-api';
@@ -15,6 +16,7 @@ const ACTION_STYLES: Record<string, { color: string; bg: string }> = {
 };
 
 function ReportCard({ report, onDelete }: { report: ReportSummary; onDelete: () => void }) {
+  const { t } = useTranslation(['reports', 'common']);
   const navigate = useNavigate();
   const style = ACTION_STYLES[report.action] ?? ACTION_STYLES.HOLD;
 
@@ -27,7 +29,7 @@ function ReportCard({ report, onDelete }: { report: ReportSummary; onDelete: () 
             {report.action}
           </span>
           <span className="text-xs text-neutral3">
-            信心度 {(report.confidence * 100).toFixed(0)}%
+            {t('common:confidence')} {(report.confidence * 100).toFixed(0)}%
           </span>
         </div>
         <button
@@ -67,7 +69,7 @@ function ReportCard({ report, onDelete }: { report: ReportSummary; onDelete: () 
           size="sm"
           onClick={() => navigate(`/reports/${report.id}`)}
         >
-          查看详情
+          {t('reports:list.viewDetail')}
         </Button>
       </div>
     </div>
@@ -75,6 +77,7 @@ function ReportCard({ report, onDelete }: { report: ReportSummary; onDelete: () 
 }
 
 export default function ReportsPage() {
+  const { t } = useTranslation(['reports', 'common']);
   const [search, setSearch] = useState('');
   const [symbolFilter, setSymbolFilter] = useState('');
   const { data, isLoading, error } = useReports({ limit: 100 });
@@ -102,7 +105,7 @@ export default function ReportsPage() {
   if (error) {
     return (
       <PageLayout className="p-4">
-        <ErrorState title="加载报告失败" message={error.message} />
+        <ErrorState title={t('reports:list.loadFailed')} message={error.message} />
       </PageLayout>
     );
   }
@@ -111,11 +114,11 @@ export default function ReportsPage() {
     <PageLayout className="gap-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl font-bold text-neutral6">投研报告</h1>
-          <p className="text-sm text-neutral3">查看和管理 AI 投研团队产出的分析报告</p>
+          <h1 className="font-display text-xl font-bold text-neutral6">{t('reports:list.title')}</h1>
+          <p className="text-sm text-neutral3">{t('reports:list.subtitle')}</p>
         </div>
         <Button onClick={() => navigate('/collaboration')}>
-          发起投研
+          {t('reports:list.startResearch')}
         </Button>
       </div>
 
@@ -127,7 +130,7 @@ export default function ReportsPage() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="搜索报告标题、结论..."
+            placeholder={t('reports:list.searchPlaceholder')}
             className="w-full rounded-lg border border-border1 bg-surface3 py-2 pl-10 pr-3 text-sm text-neutral5 outline-none placeholder:text-neutral3 focus:border-accent1"
           />
         </div>
@@ -135,20 +138,20 @@ export default function ReportsPage() {
           type="text"
           value={symbolFilter}
           onChange={e => setSymbolFilter(e.target.value)}
-          placeholder="按标的筛选"
+          placeholder={t('reports:list.symbolFilterPlaceholder')}
           className="w-40 rounded-lg border border-border1 bg-surface3 px-3 py-2 text-sm text-neutral5 outline-none placeholder:text-neutral3 focus:border-accent1"
         />
       </div>
 
       {/* 报告列表 */}
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center text-sm text-neutral3">加载中...</div>
+        <div className="flex h-64 items-center justify-center text-sm text-neutral3">{t('common:status.loading')}</div>
       ) : filtered.length === 0 ? (
         <div className="flex h-64 flex-col items-center justify-center gap-3 text-neutral3">
           <FileText className="size-12 opacity-30" />
-          <span className="text-sm">暂无报告</span>
+          <span className="text-sm">{t('reports:list.empty')}</span>
           <Button variant="ghost" size="sm" onClick={() => navigate('/collaboration')}>
-            发起第一次投研
+            {t('reports:list.startFirst')}
           </Button>
         </div>
       ) : (

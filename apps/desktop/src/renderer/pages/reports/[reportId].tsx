@@ -3,6 +3,7 @@ import { ErrorState } from '@mastra/playground-ui/components/ErrorState';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
 import { ArrowLeft, AlertTriangle, Target, ClipboardList } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useReport } from '@/lib/research-api';
 import type { AgentOpinion, RiskItem, TrackingCondition } from '@trading-agent/shared';
 
@@ -20,6 +21,7 @@ const SEVERITY_STYLES: Record<string, string> = {
 };
 
 function OpinionCard({ opinion }: { opinion: AgentOpinion }) {
+  const { t } = useTranslation(['reports', 'common']);
   const signalColor =
     opinion.signal === 'BUY'
       ? 'text-green-500'
@@ -39,7 +41,7 @@ function OpinionCard({ opinion }: { opinion: AgentOpinion }) {
           )}
           {opinion.confidence !== undefined && (
             <span className="text-xs text-neutral3">
-              信心度 {(opinion.confidence * 100).toFixed(0)}%
+              {t('common:confidence')} {(opinion.confidence * 100).toFixed(0)}%
             </span>
           )}
         </div>
@@ -51,6 +53,7 @@ function OpinionCard({ opinion }: { opinion: AgentOpinion }) {
 }
 
 export default function ReportDetailPage() {
+  const { t } = useTranslation(['reports', 'common']);
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
   const { data, isLoading, error } = useReport(reportId ?? null);
@@ -59,7 +62,7 @@ export default function ReportDetailPage() {
   if (isLoading) {
     return (
       <PageLayout className="p-4">
-        <div className="flex h-64 items-center justify-center text-sm text-neutral3">加载中...</div>
+        <div className="flex h-64 items-center justify-center text-sm text-neutral3">{t('common:status.loading')}</div>
       </PageLayout>
     );
   }
@@ -67,7 +70,7 @@ export default function ReportDetailPage() {
   if (error) {
     return (
       <PageLayout className="p-4">
-        <ErrorState title="加载报告失败" message={error.message} />
+        <ErrorState title={t('reports:detail.loadFailed')} message={error.message} />
       </PageLayout>
     );
   }
@@ -75,7 +78,7 @@ export default function ReportDetailPage() {
   if (!report) {
     return (
       <PageLayout className="p-4">
-        <ErrorState title="报告未找到" message="该报告可能已被删除" />
+        <ErrorState title={t('reports:detail.notFound')} message={t('reports:detail.notFoundDesc')} />
       </PageLayout>
     );
   }
@@ -86,7 +89,7 @@ export default function ReportDetailPage() {
     <PageLayout className="gap-4 p-4">
       {/* 返回按钮 */}
       <Button variant="ghost" size="sm" onClick={() => navigate('/reports')}>
-        <ArrowLeft className="mr-1 size-4" /> 返回报告列表
+        <ArrowLeft className="mr-1 size-4" /> {t('reports:detail.backToList')}
       </Button>
 
       {/* 报告头部 */}
@@ -98,27 +101,27 @@ export default function ReportDetailPage() {
               {report.action}
             </span>
             <span className="text-sm text-neutral3">
-              信心度 {(report.confidence * 100).toFixed(0)}%
+              {t('common:confidence')} {(report.confidence * 100).toFixed(0)}%
             </span>
           </div>
           <h2 className="text-base text-neutral5">{report.title}</h2>
           <p className="mt-1 text-xs text-neutral3">
             {report.date} · ${report.price.toFixed(2)}
-            {report.pattern ? ` · 协作模式: ${report.pattern}` : ''}
+            {report.pattern ? ` · ${t('common:pattern')}: ${report.pattern}` : ''}
           </p>
         </div>
       </div>
 
       {/* 综合结论 */}
       <div className="rounded-xl border border-border1 bg-surface3 p-4">
-        <h3 className="font-display text-sm font-semibold text-neutral6 mb-2">综合结论</h3>
+        <h3 className="font-display text-sm font-semibold text-neutral6 mb-2">{t('reports:detail.conclusion')}</h3>
         <p className="text-sm text-neutral4 leading-relaxed">{report.conclusion}</p>
       </div>
 
       {/* 各角色分析 */}
       {report.opinions && report.opinions.length > 0 && (
         <div>
-          <h3 className="font-display text-sm font-semibold text-neutral6 mb-3">各角色分析</h3>
+          <h3 className="font-display text-sm font-semibold text-neutral6 mb-3">{t('reports:detail.opinions')}</h3>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {report.opinions.map((op, i) => (
               <OpinionCard key={i} opinion={op} />
@@ -131,7 +134,7 @@ export default function ReportDetailPage() {
       {report.risks && report.risks.length > 0 && (
         <div>
           <h3 className="font-display text-sm font-semibold text-neutral6 mb-3 flex items-center gap-2">
-            <AlertTriangle className="size-4 text-yellow-500" /> 风险清单
+            <AlertTriangle className="size-4 text-yellow-500" /> {t('reports:detail.risks')}
           </h3>
           <div className="flex flex-col gap-2">
             {report.risks.map((risk: RiskItem, i: number) => (
@@ -156,7 +159,7 @@ export default function ReportDetailPage() {
       {report.trackingConditions && report.trackingConditions.length > 0 && (
         <div>
           <h3 className="font-display text-sm font-semibold text-neutral6 mb-3 flex items-center gap-2">
-            <Target className="size-4 text-blue-400" /> 跟踪条件
+            <Target className="size-4 text-blue-400" /> {t('reports:detail.tracking')}
           </h3>
           <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
             {report.trackingConditions.map((cond: TrackingCondition, i: number) => (
@@ -168,8 +171,8 @@ export default function ReportDetailPage() {
                   <ClipboardList className="size-3.5 text-neutral3" />
                   <span className="text-sm font-medium text-neutral5">{cond.metric}</span>
                 </div>
-                <p className="text-xs text-neutral3">触发条件: {cond.threshold}</p>
-                <p className="text-xs text-neutral4 mt-1">建议动作: {cond.action}</p>
+                <p className="text-xs text-neutral3">{t('reports:detail.triggerCondition')}: {cond.threshold}</p>
+                <p className="text-xs text-neutral4 mt-1">{t('reports:detail.suggestedAction')}: {cond.action}</p>
               </div>
             ))}
           </div>
@@ -179,7 +182,7 @@ export default function ReportDetailPage() {
       {/* 技术信号 */}
       {report.signal && (
         <div className="rounded-xl border border-border1 bg-surface3 p-4">
-          <h3 className="font-display text-sm font-semibold text-neutral6 mb-3">技术交易信号</h3>
+          <h3 className="font-display text-sm font-semibold text-neutral6 mb-3">{t('reports:detail.technicalSignal')}</h3>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-neutral3">RSI(14)</span>

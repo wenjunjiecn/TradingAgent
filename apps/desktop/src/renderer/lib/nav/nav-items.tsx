@@ -10,6 +10,7 @@ import type { ComponentType, SVGProps } from 'react';
 export type NavIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
 export interface NavItem {
+  /** i18n key for the display name, e.g. 'nav:items.dashboard' */
   name: string;
   url: string;
   Icon: NavIcon;
@@ -19,6 +20,7 @@ export interface NavItem {
 
 export interface NavSection {
   key: string;
+  /** i18n key for the section title, e.g. 'nav:sections.research' */
   title: string;
   href?: string;
   items: NavItem[];
@@ -28,37 +30,37 @@ export const mainNav: NavSection[] = [
   // ── 投研核心 ──────────────────────────────────────────────────────
   {
     key: 'research',
-    title: '投研',
+    title: 'nav:sections.research',
     items: [
       {
-        name: '投研看板',
+        name: 'nav:items.dashboard',
         url: '/dashboard',
         Icon: BarChart3,
         isOnMastraPlatform: false,
       },
       {
-        name: '协同投研',
+        name: 'nav:items.collaboration',
         url: '/collaboration',
         Icon: Users,
         isOnMastraPlatform: false,
         activePaths: ['/collaboration'],
       },
       {
-        name: 'Agent Team',
+        name: 'nav:items.agentTeam',
         url: '/teams',
         Icon: UsersRound,
         isOnMastraPlatform: false,
         activePaths: ['/teams'],
       },
       {
-        name: '投研报告',
+        name: 'nav:items.reports',
         url: '/reports',
         Icon: FileText,
         isOnMastraPlatform: false,
         activePaths: ['/reports'],
       },
       {
-        name: '行情数据',
+        name: 'nav:items.marketData',
         url: '/market-data',
         Icon: LineChart,
         isOnMastraPlatform: false,
@@ -69,34 +71,34 @@ export const mainNav: NavSection[] = [
   // ── 系统配置 ──────────────────────────────────────────────────────
   {
     key: 'primitives',
-    title: '系统',
+    title: 'nav:sections.system',
     items: [
       {
-        name: 'Agent配置',
+        name: 'nav:items.agentConfig',
         url: '/agents',
         Icon: AgentIcon,
         isOnMastraPlatform: true,
       },
       {
-        name: 'Workflows',
+        name: 'nav:items.workflows',
         url: '/workflows',
         Icon: WorkflowIcon,
         isOnMastraPlatform: true,
       },
       {
-        name: 'MCP Servers',
+        name: 'nav:items.mcpServers',
         url: '/mcps',
         Icon: McpServerIcon,
         isOnMastraPlatform: true,
       },
       {
-        name: 'Tools',
+        name: 'nav:items.tools',
         url: '/tools',
         Icon: ToolsIcon,
         isOnMastraPlatform: true,
       },
       {
-        name: 'Skills',
+        name: 'nav:items.skills',
         url: '/workspaces',
         Icon: WorkspacesIcon,
         isOnMastraPlatform: true,
@@ -106,7 +108,7 @@ export const mainNav: NavSection[] = [
 ];
 
 export const bottomNav: NavItem[] = [
-  { name: 'Settings', url: '/settings', Icon: SettingsIcon, isOnMastraPlatform: false },
+  { name: 'nav:items.settings', url: '/settings', Icon: SettingsIcon, isOnMastraPlatform: false },
 ];
 
 /** Section-level entries used to resolve breadcrumb label + icon for the overview routes. */

@@ -2,19 +2,25 @@ import { Breadcrumb, Crumb } from '@mastra/playground-ui/components/Breadcrumb';
 import { Header } from '@mastra/playground-ui/components/Header';
 import { Icon } from '@mastra/playground-ui/icons/Icon';
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { RouteHeaderActionsSlot } from './route-header-actions';
 import { useRouteHeaderCrumbsOverride } from './route-header-crumbs-context';
 import type { CrumbDef } from './types';
 import { useRouteHeader } from './use-route-header';
 
 function RouteHeaderCrumbContent({ def }: { def: CrumbDef }) {
+  const { t } = useTranslation();
+
   if ('Component' in def && def.Component) {
     const Component = def.Component;
     return <Component />;
   }
 
   if ('node' in def) return <>{def.node}</>;
-  return <>{def.label}</>;
+  // Translate label if it's an i18n key (contains ':')
+  const label = def.label;
+  const isI18nKey = label.includes(':');
+  return <>{isI18nKey ? t(label) : label}</>;
 }
 
 export function RouteHeader() {

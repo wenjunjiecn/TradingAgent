@@ -724,9 +724,9 @@ export const routes: RouteObject[] = [
 
       // ── Agent Team 路由 ───────────────────────────────────────────
       { path: '/teams', element: <TeamsListPage />, handle: navHandle('/teams') },
-      { path: '/teams/create', element: <TeamEditPage />, handle: navHandleWithChildren('/teams', [{ id: 'create-team', label: '创建团队' }]) },
-      { path: '/teams/:teamId/edit', element: <TeamEditPage />, handle: navHandleWithChildren('/teams', [{ id: 'edit-team', label: '编辑团队' }]) },
-      { path: '/teams/:teamId/execute', element: <TeamExecutePage />, handle: navHandleWithChildren('/teams', [{ id: 'execute-team', label: '执行任务' }]) },
+{ path: '/teams/create', element: <TeamEditPage />, handle: navHandleWithChildren('/teams', [{ id: 'create-team', label: 'teams:breadcrumbs.create' }]) },
+  { path: '/teams/:teamId/edit', element: <TeamEditPage />, handle: navHandleWithChildren('/teams', [{ id: 'edit-team', label: 'teams:breadcrumbs.edit' }]) },
+  { path: '/teams/:teamId/execute', element: <TeamExecutePage />, handle: navHandleWithChildren('/teams', [{ id: 'execute-team', label: 'teams:breadcrumbs.execute' }]) },
 
       {
         index: true,

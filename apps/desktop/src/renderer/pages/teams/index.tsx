@@ -2,6 +2,7 @@ import { Button } from '@mastra/playground-ui/components/Button';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
 import { Users, Plus, Play, Pencil, Trash2, GitBranch, Swords, Layers, ScanLine } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useTeamConfigs, useDeleteTeam, useTeamTemplates, useCreateTeamFromTemplate } from '@/lib/team-api';
 import type { CollaborationPattern } from '@trading-agent/shared';
@@ -14,15 +15,16 @@ const PATTERN_ICONS: Record<CollaborationPattern, React.ComponentType<{ classNam
   'parallel-scan': ScanLine,
 };
 
-const PATTERN_LABELS: Record<CollaborationPattern, string> = {
-  council: '圆桌会议',
-  pipeline: '流水线',
-  debate: '辩论',
-  hierarchical: '层级委派',
-  'parallel-scan': '并行扫描',
+const PATTERN_LABEL_KEYS: Record<CollaborationPattern, string> = {
+  council: 'teams:patterns.council',
+  pipeline: 'teams:patterns.pipeline',
+  debate: 'teams:patterns.debate',
+  hierarchical: 'teams:patterns.hierarchical',
+  'parallel-scan': 'teams:patterns.parallelScan',
 };
 
 export default function TeamsListPage() {
+  const { t } = useTranslation(['teams', 'common']);
   const navigate = useNavigate();
   const { data: teamsData, isLoading } = useTeamConfigs();
   const { data: templatesData } = useTeamTemplates();
@@ -34,7 +36,7 @@ export default function TeamsListPage() {
   const templates = templatesData?.templates ?? [];
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`确定删除团队「${name}」吗？`)) {
+    if (confirm(t('teams:list.deleteConfirm', { name }))) {
       await deleteTeam.mutateAsync(id);
     }
   };
@@ -52,17 +54,17 @@ export default function TeamsListPage() {
       {/* 标题栏 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl font-bold text-neutral6">Agent Team</h1>
-          <p className="text-sm text-neutral3">将多个 Agent 按协作模式组织为可复用的团队</p>
+          <h1 className="font-display text-xl font-bold text-neutral6">{t('teams:list.title')}</h1>
+          <p className="text-sm text-neutral3">{t('teams:list.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowTemplates(!showTemplates)}>
             <Plus className="mr-1 size-4" />
-            从模板创建
+            {t('teams:list.fromTemplate')}
           </Button>
           <Button size="sm" onClick={() => navigate('/teams/create')}>
             <Plus className="mr-1 size-4" />
-            创建团队
+            {t('teams:list.create')}
           </Button>
         </div>
       </div>
@@ -70,7 +72,7 @@ export default function TeamsListPage() {
       {/* 模板选择面板 */}
       {showTemplates && (
         <div className="rounded-lg border border-border1 bg-surface3 p-4">
-          <h3 className="mb-3 text-sm font-semibold text-neutral6">选择团队模板</h3>
+          <h3 className="mb-3 text-sm font-semibold text-neutral6">{t('teams:list.fromTemplateTitle')}</h3>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             {templates.map(tpl => (
               <button
@@ -83,9 +85,11 @@ export default function TeamsListPage() {
                 <span className="text-xs text-neutral3">{tpl.description}</span>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="rounded border border-border1 px-1.5 py-0.5 text-xs text-neutral3">
-                    {PATTERN_LABELS[tpl.collaboration.pattern]}
+                    {t(PATTERN_LABEL_KEYS[tpl.collaboration.pattern])}
                   </span>
-                  <span className="text-xs text-neutral3">{tpl.members.length} 成员</span>
+                  <span className="text-xs text-neutral3">
+                    {t('teams:list.members', { count: tpl.members.length })}
+                  </span>
                 </div>
               </button>
             ))}
@@ -96,12 +100,12 @@ export default function TeamsListPage() {
       {/* 团队列表 */}
       {isLoading ? (
         <div className="flex h-64 items-center justify-center text-sm text-neutral3">
-          加载团队列表...
+          {t('teams:list.loading')}
         </div>
       ) : teams.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16">
           <Users className="size-12 text-neutral4" />
-          <p className="text-sm text-neutral3">还没有团队，从模板创建或自定义一个吧</p>
+          <p className="text-sm text-neutral3">{t('teams:list.empty')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
@@ -123,7 +127,7 @@ export default function TeamsListPage() {
                   <div className="flex shrink-0 items-center gap-1 rounded border border-border1 px-1.5 py-0.5">
                     <PatternIcon className="size-3 text-neutral3" />
                     <span className="text-xs text-neutral3">
-                      {PATTERN_LABELS[team.collaboration.pattern]}
+                      {t(PATTERN_LABEL_KEYS[team.collaboration.pattern])}
                     </span>
                   </div>
                 </div>
@@ -161,11 +165,11 @@ export default function TeamsListPage() {
                 <div className="mt-auto flex items-center gap-2 pt-2">
                   <Button size="sm" onClick={() => navigate(`/teams/${team.id}/execute`)}>
                     <Play className="mr-1 size-3.5" />
-                    执行
+                    {t('teams:list.execute')}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => navigate(`/teams/${team.id}/edit`)}>
                     <Pencil className="mr-1 size-3.5" />
-                    编辑
+                    {t('teams:list.editButton')}
                   </Button>
                   <Button
                     variant="outline"

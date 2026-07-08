@@ -1,0 +1,31 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "close": "Close",
+    "back": "Back",
+    "confirm": "Confirm",
+    "confirmDelete": "Confirm Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "refresh": "Refresh",
+    "export": "Export",
+    "selectAll": "Select All",
+    "clear": "Clear",
+    "start": "Start",
+    "stop": "Stop"
+  },
+  "status": {
+    "loading": "Loading...",
+    "noData": "No data",
+    "error": "Failed to load",
+    "success": "Success",
+    "failed": "Failed"
+  },
+  "confidence": "Confidence",
+  "pattern": "Pattern",
+  "members": "members",
+  "report": "Report"
+}

@@ -1,0 +1,26 @@
+{
+  "list": {
+    "title": "Research Reports",
+    "subtitle": "View and manage analysis reports from AI research teams",
+    "startResearch": "Start Research",
+    "searchPlaceholder": "Search report title, conclusion...",
+    "symbolFilterPlaceholder": "Filter by symbol",
+    "viewDetail": "View Details",
+    "empty": "No reports",
+    "startFirst": "Start your first research",
+    "loadFailed": "Failed to load reports"
+  },
+  "detail": {
+    "backToList": "Back to Reports",
+    "notFound": "Report Not Found",
+    "notFoundDesc": "This report may have been deleted",
+    "loadFailed": "Failed to load report",
+    "conclusion": "Overall Conclusion",
+    "opinions": "Agent Opinions",
+    "risks": "Risk Factors",
+    "tracking": "Tracking Conditions",
+    "technicalSignal": "Technical Signal",
+    "triggerCondition": "Trigger condition",
+    "suggestedAction": "Suggested action"
+  }
+}

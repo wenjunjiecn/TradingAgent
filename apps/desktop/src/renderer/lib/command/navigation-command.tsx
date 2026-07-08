@@ -27,6 +27,7 @@ import {
   SlidersHorizontalIcon,
 } from 'lucide-react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useNavigationCommand } from './use-navigation-command';
 import { useAgents } from '@/domains/agents/hooks/use-agents';
@@ -572,6 +573,7 @@ export const NavigationCommand = () => {
   const { open, setOpen } = useNavigationCommand();
   const { navigate, paths } = useLinkComponent();
   const { isMastraPlatform } = useMastraPlatform();
+  const { t: tNav } = useTranslation('nav');
   const sidebar = useMaybeSidebar();
   const sidebarShortcutLabel = useKeyboardShortcutLabel('B');
   const [activeScope, setActiveScope] = React.useState<CommandScope>('all');
@@ -617,11 +619,17 @@ export const NavigationCommand = () => {
     const sections: NavigationSection[] = [];
     for (const section of mainNav) {
       const items = section.items.filter(filterNavItem);
-      if (items.length > 0) sections.push({ key: section.key, title: section.title, items });
+      if (items.length > 0) {
+        sections.push({
+          key: section.key,
+          title: tNav(section.title),
+          items: items.map(i => ({ ...i, name: tNav(i.name) })),
+        });
+      }
     }
 
     const studioItems: NavItem[] = [
-      ...bottomNav.filter(filterNavItem),
+      ...bottomNav.filter(filterNavItem).map(i => ({ ...i, name: tNav(i.name) })),
       ...(!isMastraPlatform
         ? [
             {
@@ -636,7 +644,7 @@ export const NavigationCommand = () => {
 
     if (studioItems.length === 0) return sections;
     return [...sections, { key: 'studio', title: 'Studio', items: studioItems }];
-  }, [filterNavItem, isMastraPlatform]);
+  }, [filterNavItem, isMastraPlatform, tNav]);
 
   const pathCount = navigationSections.reduce((count, section) => count + section.items.length, 0);
   const toolingCount = toolEntries.length + processorEntries.length + mcpServers.length;
