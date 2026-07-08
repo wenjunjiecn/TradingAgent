@@ -18,8 +18,9 @@ function getApiBase(): string {
   const protocol = window.MASTRA_SERVER_PROTOCOL || 'http';
   const host = window.MASTRA_SERVER_HOST || 'localhost';
   const port = window.MASTRA_SERVER_PORT || '4111';
-  const prefix = window.MASTRA_API_PREFIX || '/api';
-  return `${protocol}://${host}:${port}${prefix}`;
+  // 自定义 API 路由（/research/*）不带 /api 前缀，
+  // 与 Mastra 内置 API（/api/agents 等）不同
+  return `${protocol}://${host}:${port}`;
 }
 
 function getHeaders(): Record<string, string> {

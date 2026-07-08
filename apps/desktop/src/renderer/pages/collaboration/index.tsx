@@ -191,7 +191,7 @@ function CollaborationProgress({
 
 export default function CollaborationPage() {
   const navigate = useNavigate();
-  const { data: agentsData, isLoading: agentsLoading } = useAgentConfigs();
+  const { data: agentsData, isLoading: agentsLoading, error: agentsError } = useAgentConfigs();
   const { data: teamsData } = useTeamConfigs();
   const startCollaboration = useStartCollaboration();
 
@@ -342,6 +342,11 @@ export default function CollaborationPage() {
         {agentsLoading ? (
           <div className="flex h-32 items-center justify-center text-sm text-neutral3">
             加载 Agent 列表...
+          </div>
+        ) : agentsError ? (
+          <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-500">
+            <XCircle className="size-4 shrink-0" />
+            <span>Agent 列表加载失败: {agentsError.message}</span>
           </div>
         ) : (
           <AgentTeamPicker

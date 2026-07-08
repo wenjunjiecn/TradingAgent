@@ -64,6 +64,7 @@ const SEED_AGENT_IDS: Record<string, string> = {
   'tpl-growth-analyst': 'growth-analyst',
   'tpl-macro-analyst': 'macro-analyst',
   'tpl-quant-analyst': 'quant-analyst',
+  'tpl-research-supervisor': 'research-supervisor',
 };
 
 /** 从模板创建 AgentConfig */
@@ -79,25 +80,36 @@ function configFromTemplate(template: AgentTemplate): AgentConfig {
     memoryEnabled: true,
     metadata: template.metadata,
     isTemplate: false,
+    subAgentIds: template.subAgentIds ? [...template.subAgentIds] : undefined,
     createdAt: now,
     updatedAt: now,
   };
 }
 
-/** 种子化：如果表中无数据，从模板插入默认角色 */
+/** 种子化：逐个检查缺失的种子 agent 并插入（支持增量新增模板） */
 async function seedDefaults(): Promise<void> {
   const db = getDbClient();
-  const result = await db.execute(`SELECT COUNT(*) as count FROM ${TABLE_NAME}`);
-  const count = (result.rows[0] as any)?.count ?? 0;
-  if (Number(count) > 0) return;
 
+  // 获取当前所有已存在的种子 agent ID
+  const seedIds = Object.values(SEED_AGENT_IDS);
+  const placeholders = seedIds.map(() => '?').join(',');
+  const result = await db.execute({
+    sql: `SELECT id FROM ${TABLE_NAME} WHERE id IN (${placeholders})`,
+    args: seedIds,
+  });
+  const existingIds = new Set(result.rows.map(r => (r as any).id));
+
+  // 插入缺失的种子 agent
   for (const template of agentTemplates) {
     const config = configFromTemplate(template);
+    if (existingIds.has(config.id)) continue;
+
     const now = new Date().toISOString();
     await db.execute({
-      sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at) VALUES (?, ?, ?, ?)`,
-      args: [config.id, JSON.stringify(config), now, now],
+      sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at, name, description, model) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [config.id, JSON.stringify(config), now, now, config.name, config.description, config.model],
     });
+    console.log(`[AgentRegistry] Seeded new agent: ${config.id} (${config.name})`);
   }
 }
 
@@ -131,8 +143,16 @@ export interface AgentConfigSummary {
  */
 export async function listAgentConfigSummaries(): Promise<AgentConfigSummary[]> {
   const db = getDbClient();
+  // 完全从 config JSON 中提取字段，不依赖迁移列（name/description/model）
+  // 这样即使 ensureTable() 迁移未执行或列缺失也能正常工作
   const result = await db.execute({
-    sql: `SELECT id, name, description, model, json_extract(config, '$.metadata') as metadata FROM ${TABLE_NAME} ORDER BY created_at ASC`,
+    sql: `SELECT
+      id,
+      json_extract(config, '$.name') as name,
+      json_extract(config, '$.description') as description,
+      json_extract(config, '$.model') as model,
+      json_extract(config, '$.metadata') as metadata
+    FROM ${TABLE_NAME} ORDER BY created_at ASC`,
   });
   return result.rows.map(row => ({
     id: (row as any).id,
@@ -226,6 +246,7 @@ export async function createAgentFromTemplate(
     toolIds: [...template.toolIds],
     memoryEnabled: true,
     metadata: template.metadata,
+    subAgentIds: template.subAgentIds ? [...template.subAgentIds] : undefined,
   });
 }
 
@@ -233,8 +254,9 @@ export async function createAgentFromTemplate(
  * 将 AgentConfig 实例化为 Mastra Agent 对象
  *
  * 动态绑定 tools、model、instructions 和 memory。
+ * 如果传入 subAgents，则作为 supervisor agent 的子 agent 注入。
  */
-export function instantiateAgent(config: AgentConfig): Agent {
+export function instantiateAgent(config: AgentConfig, subAgents?: Record<string, Agent>): Agent {
   const tools = getToolsByIds(config.toolIds);
 
   const agentOptions: Record<string, unknown> = {
@@ -259,6 +281,11 @@ export function instantiateAgent(config: AgentConfig): Agent {
     agentOptions.metadata = config.metadata;
   }
 
+  // 注入子 agent（supervisor 模式）
+  if (subAgents && Object.keys(subAgents).length > 0) {
+    agentOptions.agents = subAgents;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return new Agent(agentOptions as any) as any;
 }
@@ -267,17 +294,39 @@ export function instantiateAgent(config: AgentConfig): Agent {
  * 加载所有 Agent 配置并实例化为 Mastra Agent 对象
  *
  * 返回一个 record，key 为 agent ID，value 为 Agent 实例。
+ * 支持 subAgentIds：先实例化所有普通 agent，再给 supervisor 注入子 agent 引用。
  */
 export async function loadAllAgents(): Promise<Record<string, any>> {
   await initAgentRegistry();
   const configs = await listAgentConfigs();
   const agents: Record<string, Agent> = {};
 
+  // 第一轮：实例化所有 agent（不注入子 agent）
   for (const config of configs) {
     try {
       agents[config.id] = instantiateAgent(config);
     } catch (error) {
       console.error(`[AgentRegistry] Failed to instantiate agent "${config.id}":`, error);
+    }
+  }
+
+  // 第二轮：为有 subAgentIds 的 agent 注入子 agent 引用
+  for (const config of configs) {
+    if (config.subAgentIds && config.subAgentIds.length > 0 && agents[config.id]) {
+      const subAgents: Record<string, Agent> = {};
+      for (const subId of config.subAgentIds) {
+        if (agents[subId]) {
+          subAgents[subId] = agents[subId];
+        } else {
+          console.warn(`[AgentRegistry] Sub-agent "${subId}" not found for supervisor "${config.id}"`);
+        }
+      }
+      // 重新实例化 supervisor，注入子 agent
+      try {
+        agents[config.id] = instantiateAgent(config, subAgents);
+      } catch (error) {
+        console.error(`[AgentRegistry] Failed to re-instantiate supervisor "${config.id}":`, error);
+      }
     }
   }
 

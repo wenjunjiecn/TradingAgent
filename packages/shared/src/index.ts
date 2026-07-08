@@ -151,6 +151,7 @@ export const AgentConfigSchema = z.object({
   memoryEnabled: z.boolean().default(true),
   metadata: AgentMetadataSchema.optional(),
   isTemplate: z.boolean().default(false),
+  subAgentIds: z.array(z.string()).optional().describe('子 Agent ID 列表（supervisor 模式：运行时注入子 agent 引用）'),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -165,6 +166,7 @@ export const AgentTemplateSchema = z.object({
   toolIds: z.array(z.string()).describe('预设工具 ID 列表'),
   metadata: AgentMetadataSchema.optional(),
   category: z.string().describe('模板分类，如 技术分析、基本面、宏观'),
+  subAgentIds: z.array(z.string()).optional().describe('子 Agent ID 列表（supervisor 模式）'),
 });
 
 // ─── 协作模式 Schemas ───────────────────────────────────────────────

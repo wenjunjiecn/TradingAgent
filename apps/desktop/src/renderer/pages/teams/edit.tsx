@@ -1,6 +1,6 @@
 import { Button } from '@mastra/playground-ui/components/Button';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useAgentConfigs } from '@/lib/research-api';
@@ -14,7 +14,7 @@ export default function TeamEditPage() {
   const navigate = useNavigate();
   const isEditing = !!teamId && teamId !== 'create';
 
-  const { data: agentsData } = useAgentConfigs();
+  const { data: agentsData, isLoading: agentsLoading, error: agentsError } = useAgentConfigs();
   const { data: teamData } = useTeamConfig(isEditing ? teamId! : null);
   const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
@@ -181,12 +181,28 @@ export default function TeamEditPage() {
             </select>
           </div>
 
-          <TeamMemberPicker
-            agents={agents}
-            members={members}
-            onChange={setMembers}
-            pattern={collaboration.pattern}
-          />
+          {agentsLoading ? (
+            <div className="flex h-32 items-center justify-center gap-2 text-sm text-neutral3">
+              <Loader2 className="size-4 animate-spin" />
+              加载 Agent 列表...
+            </div>
+          ) : agentsError ? (
+            <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-500">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>Agent 列表加载失败: {agentsError.message}</span>
+            </div>
+          ) : agents.length === 0 ? (
+            <div className="flex h-32 items-center justify-center text-sm text-neutral3">
+              暂无可用 Agent，请先在 Agent 配置页面创建
+            </div>
+          ) : (
+            <TeamMemberPicker
+              agents={agents}
+              members={members}
+              onChange={setMembers}
+              pattern={collaboration.pattern}
+            />
+          )}
         </div>
 
         {/* 右侧：协作配置 + 团队级配置 */}

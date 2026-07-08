@@ -9,7 +9,6 @@ import { LocalSkillSource, Workspace } from '@mastra/core/workspace';
 import { MastraEditor } from '@mastra/editor';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
 import type { Middleware } from '@mastra/core/server';
-import { createResearchSupervisor } from './agents/research-supervisor';
 import { loadAllAgents } from './agents/agent-registry';
 import { initTeamConfigStore } from './teams/team-config-store';
 import { tradingMcpServer } from './mcps/trading-mcp-server';
@@ -89,28 +88,12 @@ const storage = new MastraCompositeStore({
 
 // ── 动态加载 Agent 配置 ────────────────────────────────────────────────
 // 从 DB 加载所有 agent 配置并实例化为 Mastra Agent 对象。
-// 首次启动时自动从模板种子化默认投研角色。
-const dynamicAgents = await loadAllAgents();
+// 首次启动时自动从模板种子化默认投研角色（含 supervisor）。
+// supervisor 的子 agent 引用在 loadAllAgents 内部通过 subAgentIds 自动注入。
+const allAgents = await loadAllAgents();
 
 // 初始化 Agent Team 配置存储（含旧数据迁移和种子化）
 await initTeamConfigStore();
-
-// 提取 supervisor 所需的 4 个核心子 agent
-const supervisorSubAgents: Record<string, any> = {};
-for (const key of ['trading-agent', 'market-analysis-agent', 'sentiment-analysis-agent', 'risk-analysis-agent']) {
-  if (dynamicAgents[key]) {
-    supervisorSubAgents[key] = dynamicAgents[key];
-  }
-}
-
-// 创建投研总监 Supervisor Agent，注入子 agent 引用
-const researchSupervisor = createResearchSupervisor(supervisorSubAgents);
-
-// 合并所有 agent：动态加载的 + supervisor
-const allAgents = {
-  ...dynamicAgents,
-  'research-supervisor': researchSupervisor,
-};
 
 export const mastra = new Mastra({
   workflows: { tradingWorkflow },
