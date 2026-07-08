@@ -5,7 +5,7 @@ import { FileText, Search, Trash2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useReports, useDeleteReport } from '@/lib/research-api';
-import type { ResearchReport } from '@trading-agent/shared';
+import type { ReportSummary } from '@/lib/research-api';
 
 const ACTION_STYLES: Record<string, { color: string; bg: string }> = {
   BUY: { color: 'text-green-500', bg: 'bg-green-500/10' },
@@ -14,7 +14,7 @@ const ACTION_STYLES: Record<string, { color: string; bg: string }> = {
   WATCH: { color: 'text-blue-400', bg: 'bg-blue-400/10' },
 };
 
-function ReportCard({ report, onDelete }: { report: ResearchReport; onDelete: () => void }) {
+function ReportCard({ report, onDelete }: { report: ReportSummary; onDelete: () => void }) {
   const navigate = useNavigate();
   const style = ACTION_STYLES[report.action] ?? ACTION_STYLES.HOLD;
 
@@ -43,10 +43,10 @@ function ReportCard({ report, onDelete }: { report: ResearchReport; onDelete: ()
         <h3 className="text-sm font-medium text-neutral5">{report.title}</h3>
         <p className="mt-1 line-clamp-2 text-xs text-neutral3">{report.conclusion}</p>
       </div>
-      {/* 各角色观点摘要 */}
-      {report.opinions && report.opinions.length > 0 && (
+      {/* 各角色观点摘要（来自 opinionTags 轻量字段） */}
+      {report.opinionTags && report.opinionTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {report.opinions.map((op, i) => (
+          {report.opinionTags.map((op, i) => (
             <span
               key={i}
               className="rounded border border-border1 bg-surface4 px-2 py-0.5 text-xs text-neutral3"
@@ -82,7 +82,7 @@ export default function ReportsPage() {
   const navigate = useNavigate();
 
   const filtered = useMemo(() => {
-    const reports = data?.reports ?? [];
+    const reports = (data?.reports ?? []) as ReportSummary[];
     return reports.filter(r => {
       if (symbolFilter && !r.symbol.toLowerCase().includes(symbolFilter.toLowerCase())) {
         return false;
@@ -157,7 +157,7 @@ export default function ReportsPage() {
             <ReportCard
               key={report.id}
               report={report}
-              onDelete={() => deleteReport.mutate(report.id!)}
+              onDelete={() => deleteReport.mutate(report.id)}
             />
           ))}
         </div>

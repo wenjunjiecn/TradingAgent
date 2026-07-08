@@ -12,6 +12,7 @@ import { teamRoutes } from './team-routes';
 import {
   initReportStore,
   listReports,
+  listReportSummaries,
   getReport,
   deleteReport,
   getReportStats,
@@ -19,6 +20,7 @@ import {
 import { getMarketData } from '../tools/market-data-tool';
 import { calculateIndicators } from '../tools/technical-analysis-tool';
 import { executeCollaboration } from '../workflows/collaboration-engine';
+import { listAgentConfigSummaries } from '../agents/agent-registry';
 import type { CollaborationPattern } from '@trading-agent/shared';
 
 /**
@@ -38,7 +40,13 @@ const listReportsRoute: ApiRoute = {
     const symbol = c.req.query('symbol');
     const limit = parseInt(c.req.query('limit') ?? '50', 10);
     const offset = parseInt(c.req.query('offset') ?? '0', 10);
-    const reports = await listReports({ symbol, limit, offset });
+    // 默认返回摘要（轻量），full=true 时返回完整报告
+    const full = c.req.query('full') === 'true';
+    if (full) {
+      const reports = await listReports({ symbol, limit, offset });
+      return c.json({ reports });
+    }
+    const reports = await listReportSummaries({ symbol, limit, offset });
     return c.json({ reports });
   },
 };
@@ -78,6 +86,25 @@ const reportStatsRoute: ApiRoute = {
     await initReportStore();
     const stats = await getReportStats();
     return c.json({ stats });
+  },
+};
+
+/**
+ * Dashboard 聚合端点 —— 一次请求返回统计 + 最近报告摘要。
+ * 消除前端 2 次串行请求的往返延迟。
+ */
+const dashboardRoute: ApiRoute = {
+  path: '/research/dashboard',
+  method: 'GET',
+  handler: async (c: any) => {
+    await initReportStore();
+    const recentLimit = parseInt(c.req.query('recentLimit') ?? '8', 10);
+    // 并行执行统计 + 最近报告摘要
+    const [stats, recentReports] = await Promise.all([
+      getReportStats(),
+      listReportSummaries({ limit: recentLimit }),
+    ]);
+    return c.json({ stats, recentReports });
   },
 };
 
@@ -122,8 +149,15 @@ const listAgentsRoute: ApiRoute = {
   path: '/research/agents',
   method: 'GET',
   handler: async (c: any) => {
-    const configs = await listAgentConfigs();
-    return c.json({ agents: configs });
+    // 默认返回摘要（轻量），full=true 时返回完整配置
+    const full = c.req.query('full') === 'true';
+    if (full) {
+      const { listAgentConfigs } = await import('../agents/agent-registry');
+      const configs = await listAgentConfigs();
+      return c.json({ agents: configs });
+    }
+    const summaries = await listAgentConfigSummaries();
+    return c.json({ agents: summaries });
   },
 };
 
@@ -256,6 +290,8 @@ const getIndicatorsRoute: ApiRoute = {
 // ── 导出所有路由 ──────────────────────────────────────────────────────
 
 export const researchRoutes: ApiRoute[] = [
+  // Dashboard (聚合端点，放在 /reports/:id 之前避免路由冲突)
+  dashboardRoute,
   // Reports
   listReportsRoute,
   getReportRoute,

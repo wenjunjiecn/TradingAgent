@@ -51,6 +51,40 @@ import type {
   KLineData,
 } from '@trading-agent/shared';
 
+/** 报告摘要（轻量，不含 opinions/risks 等大字段） */
+export interface ReportSummary {
+  id: string;
+  symbol: string;
+  title: string;
+  date: string;
+  conclusion: string;
+  action: string;
+  confidence: number;
+  price: number;
+  pattern: string | null;
+  /** 观点标签列表（仅 role + signal，不含详情） */
+  opinionTags: Array<{ role: string; signal: string | null }>;
+}
+
+/** Agent 配置摘要（轻量，不含 instructions 大字段） */
+export interface AgentConfigSummary {
+  id: string;
+  name: string;
+  description: string;
+  model: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** Dashboard 聚合数据 */
+export interface DashboardData {
+  stats: {
+    total: number;
+    bySymbol: Record<string, number>;
+    byAction: Record<string, number>;
+  };
+  recentReports: ReportSummary[];
+}
+
 // ── Report Hooks ──────────────────────────────────────────────────────
 
 export function useReports(options?: { symbol?: string; limit?: number }) {
@@ -62,6 +96,8 @@ export function useReports(options?: { symbol?: string; limit?: number }) {
   return useQuery({
     queryKey: ['reports', options?.symbol, options?.limit],
     queryFn: () => apiFetch<{ reports: ResearchReport[] }>(`/reports${qs ? `?${qs}` : ''}`),
+    staleTime: 30_000,
+    placeholderData: previousData => previousData,
   });
 }
 
@@ -70,6 +106,7 @@ export function useReport(id: string | null) {
     queryKey: ['report', id],
     queryFn: () => apiFetch<{ report: ResearchReport }>(`/reports/${id}`),
     enabled: !!id,
+    staleTime: 60_000,
   });
 }
 
@@ -80,6 +117,8 @@ export function useReportStats() {
       apiFetch<{ stats: { total: number; bySymbol: Record<string, number>; byAction: Record<string, number> } }>(
         '/reports/stats',
       ),
+    staleTime: 30_000,
+    placeholderData: previousData => previousData,
   });
 }
 
@@ -90,6 +129,7 @@ export function useDeleteReport() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reports'] });
       qc.invalidateQueries({ queryKey: ['report-stats'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -112,16 +152,29 @@ export function useStartCollaboration() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reports'] });
       qc.invalidateQueries({ queryKey: ['report-stats'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
 
 // ── Agent Config Hooks ────────────────────────────────────────────────
 
+/** Dashboard 聚合 hook —— 一次请求获取统计 + 最近报告摘要 */
+export function useDashboardData(recentLimit = 8) {
+  return useQuery({
+    queryKey: ['dashboard', recentLimit],
+    queryFn: () =>
+      apiFetch<DashboardData>(`/dashboard?recentLimit=${recentLimit}`),
+    staleTime: 30_000,
+    placeholderData: previousData => previousData,
+  });
+}
+
 export function useAgentConfigs() {
   return useQuery({
     queryKey: ['agent-configs'],
     queryFn: () => apiFetch<{ agents: AgentConfig[] }>('/agents'),
+    staleTime: 60_000,
   });
 }
 
@@ -129,6 +182,7 @@ export function useAgentTemplates() {
   return useQuery({
     queryKey: ['agent-templates'],
     queryFn: () => apiFetch<{ templates: AgentTemplate[] }>('/agent-templates'),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -138,6 +192,7 @@ export function useWorkflowConfigs() {
   return useQuery({
     queryKey: ['workflow-configs'],
     queryFn: () => apiFetch<{ configs: ResearchWorkflowConfig[] }>('/workflow-configs'),
+    staleTime: 60_000,
   });
 }
 
@@ -171,6 +226,7 @@ export function useMarketData(symbol: string | null, period?: string) {
         data: { symbol: string; latestPrice: number; klines: KLineData[]; dataPoints: number };
       }>(`/market-data/${symbol}${period ? `?period=${period}` : ''}`),
     enabled: !!symbol,
+    staleTime: 60_000,
   });
 }
 
@@ -185,5 +241,6 @@ export function useIndicators(symbol: string | null, period?: string) {
         dataPoints: number;
       }>(`/indicators/${symbol}${period ? `?period=${period}` : ''}`),
     enabled: !!symbol,
+    staleTime: 60_000,
   });
 }

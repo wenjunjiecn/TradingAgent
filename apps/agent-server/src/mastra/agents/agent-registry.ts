@@ -1,4 +1,4 @@
-import { createClient, type Client } from '@libsql/client';
+import type { Client } from '@libsql/client';
 import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
@@ -8,6 +8,7 @@ import {
 } from '@trading-agent/shared';
 import { getToolsByIds } from '../tools/tool-registry';
 import { agentTemplates } from './agent-templates';
+import { getDb } from '../db';
 
 /**
  * Agent 注册中心
@@ -19,16 +20,13 @@ import { agentTemplates } from './agent-templates';
 const DB_URL = 'file:./mastra.db';
 const TABLE_NAME = 'agent_configs';
 
-let dbClient: Client | null = null;
+let storeInitialized = false;
 
 function getDbClient(): Client {
-  if (!dbClient) {
-    dbClient = createClient({ url: DB_URL });
-  }
-  return dbClient;
+  return getDb();
 }
 
-/** 确保 agent_configs 表存在 */
+/** 确保 agent_configs 表存在（含摘要列迁移） */
 async function ensureTable(): Promise<void> {
   const db = getDbClient();
   await db.execute(`
@@ -39,6 +37,21 @@ async function ensureTable(): Promise<void> {
       updated_at TEXT NOT NULL
     )
   `);
+
+  // 迁移：添加摘要列
+  const pragma = await db.execute({ sql: `PRAGMA table_info(${TABLE_NAME})` });
+  const existingCols = new Set(pragma.rows.map(r => (r as any).name));
+  const toAdd = [
+    { col: 'name', type: 'TEXT' },
+    { col: 'description', type: 'TEXT' },
+    { col: 'model', type: 'TEXT' },
+  ];
+  for (const { col, type } of toAdd) {
+    if (!existingCols.has(col)) {
+      await db.execute({ sql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN ${col} ${type}` });
+      await db.execute({ sql: `UPDATE ${TABLE_NAME} SET ${col} = json_extract(config, '$.${col}')` });
+    }
+  }
 }
 
 /** 种子 agent ID 映射 — 模板 ID → agent ID（与 workflow 中的 getAgent() 调用对应） */
@@ -88,10 +101,12 @@ async function seedDefaults(): Promise<void> {
   }
 }
 
-/** 初始化注册中心 */
+/** 初始化注册中心（仅首次调用执行完整初始化） */
 export async function initAgentRegistry(): Promise<void> {
+  if (storeInitialized) return;
   await ensureTable();
   await seedDefaults();
+  storeInitialized = true;
 }
 
 /** 列出所有 Agent 配置 */
@@ -99,6 +114,33 @@ export async function listAgentConfigs(): Promise<AgentConfig[]> {
   const db = getDbClient();
   const result = await db.execute(`SELECT config FROM ${TABLE_NAME} ORDER BY created_at ASC`);
   return result.rows.map(row => JSON.parse((row as any).config) as AgentConfig);
+}
+
+/** Agent 配置摘要（轻量，不含 instructions 等大字段） */
+export interface AgentConfigSummary {
+  id: string;
+  name: string;
+  description: string;
+  model: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 列出所有 Agent 配置摘要（不读取 config JSON 正文）
+ * 适用于列表/选择器场景，避免加载 8 份完整 instructions（可能数十 KB）。
+ */
+export async function listAgentConfigSummaries(): Promise<AgentConfigSummary[]> {
+  const db = getDbClient();
+  const result = await db.execute({
+    sql: `SELECT id, name, description, model, json_extract(config, '$.metadata') as metadata FROM ${TABLE_NAME} ORDER BY created_at ASC`,
+  });
+  return result.rows.map(row => ({
+    id: (row as any).id,
+    name: (row as any).name ?? '',
+    description: (row as any).description ?? '',
+    model: (row as any).model ?? '',
+    metadata: (row as any).metadata ? JSON.parse((row as any).metadata) : undefined,
+  }));
 }
 
 /** 获取单个 Agent 配置 */
@@ -124,8 +166,8 @@ export async function createAgentConfig(config: Omit<AgentConfig, 'createdAt' | 
   };
 
   await db.execute({
-    sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at) VALUES (?, ?, ?, ?)`,
-    args: [fullConfig.id, JSON.stringify(fullConfig), now, now],
+    sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at, name, description, model) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [fullConfig.id, JSON.stringify(fullConfig), now, now, fullConfig.name ?? null, fullConfig.description ?? null, fullConfig.model ?? null],
   });
 
   return fullConfig;
@@ -146,8 +188,8 @@ export async function updateAgentConfig(id: string, updates: Partial<AgentConfig
 
   const db = getDbClient();
   await db.execute({
-    sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ? WHERE id = ?`,
-    args: [JSON.stringify(updated), now, id],
+    sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ?, name = ?, description = ?, model = ? WHERE id = ?`,
+    args: [JSON.stringify(updated), now, updated.name ?? null, updated.description ?? null, updated.model ?? null, id],
   });
 
   return updated;

@@ -1,4 +1,4 @@
-import { createClient, type Client } from '@libsql/client';
+import type { Client } from '@libsql/client';
 import type {
   AgentTeamConfig,
   AgentTeamTemplate,
@@ -6,6 +6,7 @@ import type {
   CollaborationPattern,
 } from '@trading-agent/shared';
 import { agentTeamTemplates } from './team-templates';
+import { getDb } from '../db';
 
 /**
  * Agent Team 配置存储
@@ -14,17 +15,13 @@ import { agentTeamTemplates } from './team-templates';
  * 启动时自动从模板种子化默认团队，并迁移旧 workflow_configs 数据。
  */
 
-const DB_URL = 'file:./mastra.db';
 const TABLE_NAME = 'agent_teams';
 const OLD_TABLE_NAME = 'workflow_configs';
 
-let dbClient: Client | null = null;
+let storeInitialized = false;
 
 function getDbClient(): Client {
-  if (!dbClient) {
-    dbClient = createClient({ url: DB_URL });
-  }
-  return dbClient;
+  return getDb();
 }
 
 /** 确保 agent_teams 表存在 */
@@ -171,11 +168,13 @@ async function seedDefaults(): Promise<void> {
   console.log(`[TeamConfigStore] Seeded ${agentTeamTemplates.length} default teams`);
 }
 
-/** 初始化 Team 配置存储 */
+/** 初始化 Team 配置存储（仅首次调用执行完整初始化） */
 export async function initTeamConfigStore(): Promise<void> {
+  if (storeInitialized) return;
   await ensureTable();
   await migrateOldWorkflowConfigs();
   await seedDefaults();
+  storeInitialized = true;
 }
 
 /** 列出所有 Team 配置 */

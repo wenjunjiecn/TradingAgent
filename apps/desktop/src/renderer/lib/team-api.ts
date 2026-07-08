@@ -52,6 +52,8 @@ export function useTeamConfigs() {
   return useQuery({
     queryKey: ['team-configs'],
     queryFn: () => apiFetch<{ teams: AgentTeamConfig[] }>('/teams'),
+    staleTime: 60_000,
+    placeholderData: previousData => previousData,
   });
 }
 
@@ -60,6 +62,7 @@ export function useTeamConfig(id: string | null) {
     queryKey: ['team-config', id],
     queryFn: () => apiFetch<{ team: AgentTeamConfig }>(`/teams/${id}`),
     enabled: !!id,
+    staleTime: 60_000,
   });
 }
 
@@ -108,6 +111,7 @@ export function useTeamTemplates() {
   return useQuery({
     queryKey: ['team-templates'],
     queryFn: () => apiFetch<{ templates: AgentTeamTemplate[] }>('/team-templates'),
+    staleTime: 5 * 60_000,
   });
 }
 

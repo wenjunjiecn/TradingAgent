@@ -6,6 +6,35 @@ import * as http from 'http';
 import { randomBytes } from 'crypto';
 import kill from 'tree-kill';
 
+// ── EPIPE 防护 ────────────────────────────────────────────────────────
+// 在关闭/重启过程中，子进程 stdout 的数据仍会触发 console.log，
+// 但主进程自身的 stdout 管道可能已断开，导致未捕获的 EPIPE 异常。
+// 拦截 process.stdout/stderr 的 error 事件，阻止崩溃。
+process.stdout?.on?.('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EPIPE') return;
+  throw err;
+});
+process.stderr?.on?.('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EPIPE') return;
+  throw err;
+});
+
+/** 安全日志输出，捕获 EPIPE 防止未捕获异常 */
+function safeLog(...args: unknown[]): void {
+  try {
+    console.log(...args);
+  } catch (err: any) {
+    if (err?.code !== 'EPIPE') throw err;
+  }
+}
+function safeError(...args: unknown[]): void {
+  try {
+    console.error(...args);
+  } catch (err: any) {
+    if (err?.code !== 'EPIPE') throw err;
+  }
+}
+
 let mainWindow: BrowserWindow | null;
 const devProcesses: ChildProcess[] = [];
 const MASTRA_SERVER_HOST = '127.0.0.1';
@@ -148,7 +177,7 @@ function waitForTradingAgentReady(timeoutMs: number): Promise<void> {
 }
 
 function startDevProcess(label: string, scriptName: string, env: NodeJS.ProcessEnv = {}) {
-  console.log(`Starting ${label} in:`, PROJECT_ROOT);
+  safeLog(`Starting ${label} in:`, PROJECT_ROOT);
 
   const childProcess = spawn('npm', ['run', scriptName], {
     cwd: PROJECT_ROOT,
@@ -160,18 +189,24 @@ function startDevProcess(label: string, scriptName: string, env: NodeJS.ProcessE
 
   if (childProcess.stdout) {
     childProcess.stdout.on('data', (data) => {
-      console.log(`[${label} Out]: ${data}`);
+      safeLog(`[${label} Out]: ${data}`);
+    });
+    childProcess.stdout.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code !== 'EPIPE') safeError(`${label} stdout error:`, err);
     });
   }
 
   if (childProcess.stderr) {
     childProcess.stderr.on('data', (data) => {
-      console.error(`[${label} Err]: ${data}`);
+      safeError(`[${label} Err]: ${data}`);
+    });
+    childProcess.stderr.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code !== 'EPIPE') safeError(`${label} stderr error:`, err);
     });
   }
 
   childProcess.on('close', (code) => {
-    console.log(`${label} process exited with code ${code}`);
+    safeLog(`${label} process exited with code ${code}`);
     const index = devProcesses.indexOf(childProcess);
     if (index >= 0) {
       devProcesses.splice(index, 1);
@@ -179,7 +214,7 @@ function startDevProcess(label: string, scriptName: string, env: NodeJS.ProcessE
   });
 
   childProcess.on('error', (error) => {
-    console.error(`${label} process failed to start:`, error);
+    safeError(`${label} process failed to start:`, error);
   });
 
   return childProcess;
@@ -193,7 +228,7 @@ function startEmbeddedAgentServer() {
   const serverDataDir = path.join(app.getPath('userData'), 'agent-server');
   fs.mkdirSync(serverDataDir, { recursive: true });
 
-  console.log('Starting embedded Mastra API from:', EMBEDDED_SERVER_ENTRY);
+  safeLog('Starting embedded Mastra API from:', EMBEDDED_SERVER_ENTRY);
 
   const childProcess = spawn(process.execPath, [EMBEDDED_SERVER_ENTRY], {
     cwd: serverDataDir,
@@ -213,18 +248,24 @@ function startEmbeddedAgentServer() {
 
   if (childProcess.stdout) {
     childProcess.stdout.on('data', (data) => {
-      console.log(`[Embedded Mastra API Out]: ${data}`);
+      safeLog(`[Embedded Mastra API Out]: ${data}`);
+    });
+    childProcess.stdout.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code !== 'EPIPE') safeError('Embedded Mastra API stdout error:', err);
     });
   }
 
   if (childProcess.stderr) {
     childProcess.stderr.on('data', (data) => {
-      console.error(`[Embedded Mastra API Err]: ${data}`);
+      safeError(`[Embedded Mastra API Err]: ${data}`);
+    });
+    childProcess.stderr.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code !== 'EPIPE') safeError('Embedded Mastra API stderr error:', err);
     });
   }
 
   childProcess.on('close', (code) => {
-    console.log(`Embedded Mastra API process exited with code ${code}`);
+    safeLog(`Embedded Mastra API process exited with code ${code}`);
     const index = devProcesses.indexOf(childProcess);
     if (index >= 0) {
       devProcesses.splice(index, 1);
@@ -232,7 +273,7 @@ function startEmbeddedAgentServer() {
   });
 
   childProcess.on('error', (error) => {
-    console.error('Embedded Mastra API process failed to start:', error);
+    safeError('Embedded Mastra API process failed to start:', error);
   });
 
   return childProcess;

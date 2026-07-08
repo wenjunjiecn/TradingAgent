@@ -1,5 +1,6 @@
-import { createClient, type Client } from '@libsql/client';
+import type { Client } from '@libsql/client';
 import type { ResearchWorkflowConfig, CollaborationPattern } from '@trading-agent/shared';
+import { getDb } from '../db';
 
 /**
  * 投研工作流配置存储
@@ -7,16 +8,10 @@ import type { ResearchWorkflowConfig, CollaborationPattern } from '@trading-agen
  * 管理工作流配置的持久化，用户可保存常用的 agent 组合 + 协作模式为模板。
  */
 
-const DB_URL = 'file:./mastra.db';
 const TABLE_NAME = 'workflow_configs';
 
-let dbClient: Client | null = null;
-
 function getDbClient(): Client {
-  if (!dbClient) {
-    dbClient = createClient({ url: DB_URL });
-  }
-  return dbClient;
+  return getDb();
 }
 
 async function ensureTable(): Promise<void> {

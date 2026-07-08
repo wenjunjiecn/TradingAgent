@@ -3,7 +3,8 @@ import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
 import { ArrowRight, FileText, TrendingUp, Users, Activity, Trash2, UsersRound } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { useReports, useReportStats, useDeleteReport } from '@/lib/research-api';
+import { useDashboardData, useDeleteReport } from '@/lib/research-api';
+import type { ReportSummary } from '@/lib/research-api';
 
 // ── 自选股快捷列表（本地存储） ────────────────────────────────────────
 const DEFAULT_WATCHLIST = ['AAPL', 'NVDA', 'TSLA', 'GOOGL', 'MSFT'];
@@ -43,11 +44,13 @@ function StatCard({
   value,
   icon: Icon,
   color,
+  loading,
 }: {
   label: string;
   value: string | number;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  loading?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-border1 bg-surface3 p-4">
@@ -55,7 +58,13 @@ function StatCard({
         <span className="text-sm text-neutral3">{label}</span>
         <Icon className={`size-4 ${color}`} />
       </div>
-      <span className="font-display text-2xl font-semibold text-neutral6">{value}</span>
+      <span
+        className={`font-display text-2xl font-semibold text-neutral6 ${
+          loading ? 'animate-pulse text-neutral4' : ''
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -128,24 +137,22 @@ function WatchlistPanel() {
 
 // ── 最近报告面板 ──────────────────────────────────────────────────────
 
-function RecentReportsPanel() {
-  const { data, isLoading } = useReports({ limit: 8 });
+function actionColor(action: string) {
+  switch (action) {
+    case 'BUY':
+      return 'text-green-500';
+    case 'SELL':
+      return 'text-red-500';
+    case 'HOLD':
+      return 'text-yellow-500';
+    default:
+      return 'text-neutral3';
+  }
+}
+
+function RecentReportsPanel({ reports, isLoading }: { reports: ReportSummary[]; isLoading: boolean }) {
   const deleteReport = useDeleteReport();
   const navigate = useNavigate();
-  const reports = data?.reports ?? [];
-
-  const actionColor = (action: string) => {
-    switch (action) {
-      case 'BUY':
-        return 'text-green-500';
-      case 'SELL':
-        return 'text-red-500';
-      case 'HOLD':
-        return 'text-yellow-500';
-      default:
-        return 'text-neutral3';
-    }
-  };
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border1 bg-surface3 p-4">
@@ -197,7 +204,7 @@ function RecentReportsPanel() {
               <button
                 type="button"
                 className="ml-2 shrink-0 text-neutral3 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
-                onClick={() => deleteReport.mutate(report.id!)}
+                onClick={() => deleteReport.mutate(report.id)}
                 aria-label="Delete report"
               >
                 <Trash2 className="size-3.5" />
@@ -212,10 +219,15 @@ function RecentReportsPanel() {
 
 // ── 投研统计面板 ──────────────────────────────────────────────────────
 
-function ResearchStatsPanel() {
-  const { data, isLoading } = useReportStats();
-  const stats = data?.stats;
-
+function ResearchStatsPanel({
+  stats,
+  isLoading,
+  isFetching,
+}: {
+  stats?: { total: number; bySymbol: Record<string, number>; byAction: Record<string, number> };
+  isLoading: boolean;
+  isFetching: boolean;
+}) {
   const topSymbols = useMemo(() => {
     if (!stats?.bySymbol) return [];
     return Object.entries(stats.bySymbol)
@@ -223,38 +235,31 @@ function ResearchStatsPanel() {
       .slice(0, 5);
   }, [stats]);
 
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-3 gap-3">
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            className="h-24 animate-pulse rounded-xl border border-border1 bg-surface3"
-          />
-        ))}
-      </div>
-    );
-  }
+  // 首次加载且无缓存数据时，用微光占位值让卡片结构立即可见
+  const showShimmer = isLoading && !stats;
 
   return (
     <div className="grid grid-cols-3 gap-3">
       <StatCard
         label="报告总数"
-        value={stats?.total ?? 0}
+        value={showShimmer ? '—' : stats?.total ?? 0}
         icon={FileText}
         color="text-blue-400"
+        loading={showShimmer || (isFetching && !stats)}
       />
       <StatCard
         label="覆盖标的"
-        value={Object.keys(stats?.bySymbol ?? {}).length}
+        value={showShimmer ? '—' : Object.keys(stats?.bySymbol ?? {}).length}
         icon={Activity}
         color="text-purple-400"
+        loading={showShimmer || (isFetching && !stats)}
       />
       <StatCard
         label="买入建议"
-        value={stats?.byAction?.BUY ?? 0}
+        value={showShimmer ? '—' : stats?.byAction?.BUY ?? 0}
         icon={TrendingUp}
         color="text-green-400"
+        loading={showShimmer || (isFetching && !stats)}
       />
       {topSymbols.length > 0 && (
         <div className="col-span-3 rounded-xl border border-border1 bg-surface3 p-4">
@@ -333,6 +338,9 @@ function QuickActionsPanel() {
 // ── Dashboard 主页面 ──────────────────────────────────────────────────
 
 export default function Dashboard() {
+  // 一次聚合请求获取统计 + 最近报告摘要，替代原来 2 次独立请求
+  const { data, isLoading, isFetching } = useDashboardData(8);
+
   return (
     <PageLayout className="gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -343,7 +351,7 @@ export default function Dashboard() {
       </div>
 
       {/* 统计 */}
-      <ResearchStatsPanel />
+      <ResearchStatsPanel stats={data?.stats} isLoading={isLoading} isFetching={isFetching} />
 
       {/* 快捷操作 */}
       <QuickActionsPanel />
@@ -351,7 +359,7 @@ export default function Dashboard() {
       {/* 自选股 + 最近报告 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <WatchlistPanel />
-        <RecentReportsPanel />
+        <RecentReportsPanel reports={data?.recentReports ?? []} isLoading={isLoading} />
       </div>
     </PageLayout>
   );
