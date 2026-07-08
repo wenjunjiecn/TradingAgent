@@ -13,6 +13,7 @@ import { findProjectRoot, DB_URL } from './db';
 import { tradingMcpServer } from './mcps/trading-mcp-server';
 import { tradingWorkflow } from './workflows/trading-workflow';
 import { researchRoutes } from './api/research-routes';
+import { settingsRoutes } from './api/settings-routes';
 
 const DESKTOP_AUTH_HEADER = 'x-trading-agent-token';
 const desktopAuthToken = process.env.TRADING_AGENT_DESKTOP_TOKEN;
@@ -80,7 +81,7 @@ export const mastra = new Mastra({
   }),
   server: {
     middleware: desktopAuthMiddleware,
-    apiRoutes: researchRoutes,
+    apiRoutes: [...researchRoutes, ...settingsRoutes],
     cors: {
       origin: resolveCorsOrigin,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

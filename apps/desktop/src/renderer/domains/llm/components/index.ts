@@ -5,3 +5,5 @@ export { LLMModels } from './llm-models';
 export type { LLMModelsProps } from './llm-models';
 
 export { ProviderLogo } from './provider-logo';
+
+export { LLMProviderConfig } from './llm-provider-config';

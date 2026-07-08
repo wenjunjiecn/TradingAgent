@@ -8,6 +8,7 @@ import type { LucideIcon } from 'lucide-react';
 import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react';
 import { StudioConfigForm } from '@/domains/configuration/components/studio-config-form';
 import { useStudioConfig } from '@/domains/configuration/context/studio-config-state';
+import { LLMProviderConfig } from '@/domains/llm/components/llm-provider-config';
 
 const THEME_OPTIONS: { value: Theme; label: string; Icon: LucideIcon }[] = [
   { value: 'dark', label: 'Dark', Icon: MoonIcon },
@@ -62,6 +63,13 @@ export const StudioSettingsPage = () => {
           description="Configure the Mastra instance URL, API prefix, and request headers used by the studio."
         >
           <StudioConfigForm initialConfig={{ baseUrl, headers, apiPrefix }} />
+        </SectionCard>
+
+        <SectionCard
+          title="Model Providers"
+          description="Manage API keys and connections for AI model providers."
+        >
+          <LLMProviderConfig />
         </SectionCard>
       </PageLayout.MainArea>
     </PageLayout>
