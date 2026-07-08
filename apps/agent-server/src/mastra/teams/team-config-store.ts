@@ -68,8 +68,9 @@ async function migrateOldWorkflowConfigs(): Promise<number> {
   const oldResult = await db.execute(`SELECT config FROM ${OLD_TABLE_NAME}`);
   if (oldResult.rows.length === 0) return 0;
 
-  let migrated = 0;
   const now = new Date().toISOString();
+  const toInsert: Array<{ sql: string; args: unknown[] }> = [];
+  let migrated = 0;
 
   for (const row of oldResult.rows) {
     try {
@@ -119,7 +120,7 @@ async function migrateOldWorkflowConfigs(): Promise<number> {
         updatedAt: now,
       };
 
-      await db.execute({
+      toInsert.push({
         sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at) VALUES (?, ?, ?, ?)`,
         args: [newConfig.id, JSON.stringify(newConfig), newConfig.createdAt, now],
       });
@@ -127,6 +128,11 @@ async function migrateOldWorkflowConfigs(): Promise<number> {
     } catch (err) {
       console.warn(`[TeamConfigStore] Failed to migrate workflow config:`, err instanceof Error ? err.message : String(err));
     }
+  }
+
+  // 批量插入已迁移的数据
+  if (toInsert.length > 0) {
+    await db.batch(toInsert as never);
   }
 
   // 清空旧表（不删除，保留作为备份）
@@ -137,23 +143,24 @@ async function migrateOldWorkflowConfigs(): Promise<number> {
   return migrated;
 }
 
-/** 种子化：如果表中无数据，从模板插入默认团队 */
+/** 种子化：如果表中无数据，从模板批量插入默认团队 */
 async function seedDefaults(): Promise<void> {
   const db = getDbClient();
   const result = await db.execute(`SELECT COUNT(*) as count FROM ${TABLE_NAME}`);
   const count = (result.rows[0] as any)?.count ?? 0;
   if (Number(count) > 0) return;
 
-  for (const template of agentTeamTemplates) {
+  // 批量插入：单事务提交
+  const now = new Date().toISOString();
+  await db.batch(agentTeamTemplates.map(template => {
     const config = configFromTemplate(template);
-    const now = new Date().toISOString();
-    await db.execute({
+    return {
       sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at) VALUES (?, ?, ?, ?)`,
-      args: [config.id, JSON.stringify(config), now, now],
-    });
-  }
+      args: [config.id, JSON.stringify(config), config.createdAt, now],
+    };
+  }));
 
-  console.log(`[TeamConfigStore] Seeded ${agentTeamTemplates.length} default teams`);
+  console.log(`[TeamConfigStore] Seeded ${agentTeamTemplates.length} default teams in batch`);
 }
 
 /** 初始化 Team 配置存储（仅首次调用执行完整初始化） */

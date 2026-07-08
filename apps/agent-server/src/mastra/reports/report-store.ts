@@ -40,27 +40,6 @@ function extractOpinionTags(report: ResearchReport): string | null {
   return JSON.stringify(tags);
 }
 
-/**
- * 迁移：为已有表添加摘要列并回填数据。
- * 使用 PRAGMA table_info 检测列是否已存在，保证幂等。
- */
-async function migrateSummaryColumns(db: Client): Promise<void> {
-  const pragma = await db.execute({ sql: `PRAGMA table_info(${TABLE_NAME})` });
-  const existingCols = new Set(pragma.rows.map(r => (r as any).name));
-
-  const toAdd = SUMMARY_COLUMNS.filter(c => !existingCols.has(c.col));
-  if (toAdd.length === 0) return;
-
-  // 逐列 ADD COLUMN（SQLite 不支持单条语句多列添加）
-  for (const col of toAdd) {
-    await db.execute({ sql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN ${col.col} ${col.type}` });
-  }
-
-  // 回填已有行的摘要字段
-  const setClauses = toAdd.map(c => `${c.col} = json_extract(report, '${c.jsonPath}')`).join(', ');
-  await db.execute({ sql: `UPDATE ${TABLE_NAME} SET ${setClauses}` });
-}
-
 /** 确保报告表存在（仅首次调用真正执行 DDL，后续直接跳过） */
 export async function initReportStore(): Promise<void> {
   if (storeInitialized) return;
@@ -74,35 +53,48 @@ export async function initReportStore(): Promise<void> {
     )
   `);
 
-  // 迁移：添加摘要列 + 回填
-  await migrateSummaryColumns(db);
+  // 单次 PRAGMA 查询获取所有现有列，供后续所有迁移复用
+  const pragma = await db.execute({ sql: `PRAGMA table_info(${TABLE_NAME})` });
+  const existingCols = new Set(pragma.rows.map(r => (r as any).name));
+
+  // 迁移：添加摘要列
+  const summaryToAdd = SUMMARY_COLUMNS.filter(c => !existingCols.has(c.col));
+  if (summaryToAdd.length > 0) {
+    await db.batch(summaryToAdd.map(c => ({
+      sql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN ${c.col} ${c.type}`,
+      args: [] as never[],
+    })));
+    const setClauses = summaryToAdd.map(c => `${c.col} = json_extract(report, '${c.jsonPath}')`).join(', ');
+    await db.execute({ sql: `UPDATE ${TABLE_NAME} SET ${setClauses}` });
+  }
 
   // 迁移：添加 opinion_tags 列
-  const pragma2 = await db.execute({ sql: `PRAGMA table_info(${TABLE_NAME})` });
-  if (!pragma2.rows.some(r => (r as any).name === 'opinion_tags')) {
+  if (!existingCols.has('opinion_tags')) {
     await db.execute({ sql: `ALTER TABLE ${TABLE_NAME} ADD COLUMN opinion_tags TEXT` });
     // 回填：从已有 JSON 中提取 opinion 标签
     const rows = await db.execute({ sql: `SELECT id, report FROM ${TABLE_NAME} WHERE opinion_tags IS NULL` });
-    for (const row of rows.rows) {
-      try {
-        const r = JSON.parse((row as any).report) as ResearchReport;
-        const tags = extractOpinionTags(r);
-        if (tags) {
-          await db.execute({ sql: `UPDATE ${TABLE_NAME} SET opinion_tags = ? WHERE id = ?`, args: [tags, (row as any).id] });
+    if (rows.rows.length > 0) {
+      const tagUpdates = rows.rows.map(row => {
+        try {
+          const r = JSON.parse((row as any).report) as ResearchReport;
+          const tags = extractOpinionTags(r);
+          return { sql: `UPDATE ${TABLE_NAME} SET opinion_tags = ? WHERE id = ?`, args: [tags, (row as any).id] as never };
+        } catch {
+          return null;
         }
-      } catch { /* skip malformed */ }
+      }).filter(Boolean) as never[];
+      if (tagUpdates.length > 0) {
+        await db.batch(tagUpdates);
+      }
     }
   }
 
-  await db.execute(`
-    CREATE INDEX IF NOT EXISTS idx_${TABLE_NAME}_symbol ON ${TABLE_NAME}(symbol)
-  `);
-  await db.execute(`
-    CREATE INDEX IF NOT EXISTS idx_${TABLE_NAME}_created_at ON ${TABLE_NAME}(created_at DESC)
-  `);
-  await db.execute(`
-    CREATE INDEX IF NOT EXISTS idx_${TABLE_NAME}_action ON ${TABLE_NAME}(action)
-  `);
+  // 并行创建索引（索引间无依赖）
+  await Promise.all([
+    db.execute(`CREATE INDEX IF NOT EXISTS idx_${TABLE_NAME}_symbol ON ${TABLE_NAME}(symbol)`),
+    db.execute(`CREATE INDEX IF NOT EXISTS idx_${TABLE_NAME}_created_at ON ${TABLE_NAME}(created_at DESC)`),
+    db.execute(`CREATE INDEX IF NOT EXISTS idx_${TABLE_NAME}_action ON ${TABLE_NAME}(action)`),
+  ]);
   storeInitialized = true;
 }
 

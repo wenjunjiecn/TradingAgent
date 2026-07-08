@@ -11,6 +11,20 @@ import { agentTemplates } from './agent-templates';
 import { getDb, DB_URL } from '../db';
 import { runMigrations } from '../db-migrations';
 
+// ── 共享 Memory 存储 ──────────────────────────────────────────────────────
+// 所有启用 memory 的 Agent 共用一个 LibSQLStore 实例，避免 N 个独立 DB 连接
+// 到同一个 SQLite 文件带来的连接建立开销和 page cache 冗余。
+let sharedMemoryStore: LibSQLStore | null = null;
+function getSharedMemoryStore(): LibSQLStore {
+  if (!sharedMemoryStore) {
+    sharedMemoryStore = new LibSQLStore({
+      id: 'shared-agent-memory',
+      url: DB_URL,
+    });
+  }
+  return sharedMemoryStore;
+}
+
 /**
  * Agent 注册中心
  *
@@ -58,7 +72,7 @@ function configFromTemplate(template: AgentTemplate): AgentConfig {
   };
 }
 
-/** 种子化：逐个检查缺失的种子 agent 并插入（支持增量新增模板） */
+/** 种子化：检查缺失的种子 agent 并批量插入（支持增量新增模板） */
 async function seedDefaults(): Promise<void> {
   const db = getDbClient();
 
@@ -71,18 +85,22 @@ async function seedDefaults(): Promise<void> {
   });
   const existingIds = new Set(result.rows.map(r => (r as any).id));
 
-  // 插入缺失的种子 agent
+  // 收集需要插入的配置
+  const toInsert: Array<{ config: AgentConfig; now: string }> = [];
   for (const template of agentTemplates) {
     const config = configFromTemplate(template);
     if (existingIds.has(config.id)) continue;
-
-    const now = new Date().toISOString();
-    await db.execute({
-      sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at, name, description, model) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [config.id, JSON.stringify(config), now, now, config.name, config.description, config.model],
-    });
-    console.log(`[AgentRegistry] Seeded new agent: ${config.id} (${config.name})`);
+    toInsert.push({ config, now: config.createdAt });
   }
+
+  if (toInsert.length === 0) return;
+
+  // 批量插入：单事务提交，避免 N 次串行 DB 往返
+  await db.batch(toInsert.map(({ config, now }) => ({
+    sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at, name, description, model) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [config.id, JSON.stringify(config), now, now, config.name, config.description, config.model],
+  })));
+  console.log(`[AgentRegistry] Seeded ${toInsert.length} new agents in batch`);
 }
 
 /** 初始化注册中心（仅首次调用执行完整初始化） */
@@ -242,10 +260,7 @@ export function instantiateAgent(config: AgentConfig, subAgents?: Record<string,
 
   if (config.memoryEnabled) {
     agentOptions.memory = new Memory({
-      storage: new LibSQLStore({
-        id: `memory-${config.id}`,
-        url: DB_URL,
-      }),
+      storage: getSharedMemoryStore(),
     });
   }
 

@@ -55,6 +55,8 @@ const EMBEDDED_SERVER_DIR = app.isPackaged
   : path.join(PROJECT_ROOT, 'apps', 'agent-server', '.mastra', 'output');
 const EMBEDDED_SERVER_ENTRY = path.join(EMBEDDED_SERVER_DIR, 'index.mjs');
 
+const POLL_INTERVAL_MS = 200; // 缩短轮询间隔，减少就绪检测延迟
+
 function checkUrlReady(url: string, callback: (ready: boolean) => void, timeoutMs = 2500) {
   let settled = false;
   const finish = (ready: boolean) => {
@@ -102,7 +104,7 @@ function waitForUrlReady(url: string, timeoutMs: number): Promise<void> {
           return;
         }
 
-        setTimeout(poll, 500);
+        setTimeout(poll, POLL_INTERVAL_MS);
       });
     };
 
@@ -169,7 +171,7 @@ function waitForTradingAgentReady(timeoutMs: number): Promise<void> {
           return;
         }
 
-        setTimeout(poll, 500);
+        setTimeout(poll, POLL_INTERVAL_MS);
       });
     };
 
@@ -449,64 +451,108 @@ function startMissingDevServices() {
   }
 
   // ── Dev mode ──────────────────────────────────────────────────────
-  checkTradingAgentReady((apiRunning) => {
-    if (apiRunning) {
+  // 立即显示 loading screen，不等 agent-server 检查完毕
+  loadLoadingScreen();
+  updateLoadingStatus(5, 'Starting…');
+
+  // 并行检查 agent-server 和 renderer 的就绪状态
+  // 之前是串行嵌套（agent 检查 → renderer 检查 → 启动 Vite），浪费大量等待时间
+  let apiReady = false;
+  let rendererReady = false;
+  let apiAlreadyRunning = false;
+  let rendererAlreadyRunning = false;
+
+  const tryFinish = () => {
+    if (apiReady && rendererReady) {
+      updateLoadingStatus(100, 'Ready', 'Launching…');
+      fadeOutAndLoadRenderer();
+    }
+  };
+
+  // ── 检查/启动 Agent API ───────────────────────────────────────────
+  checkTradingAgentReady((running) => {
+    if (running) {
       console.log('Mastra API already running.');
-    } else {
-      updateLoadingStatus(15, 'Starting Mastra API…');
-      startDevProcess('Mastra API', 'dev:agent', {
-        HOST: MASTRA_SERVER_HOST,
-        PORT: MASTRA_SERVER_PORT,
-        TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
-      });
+      apiAlreadyRunning = true;
+      apiReady = true;
+      tryFinish();
+      return;
     }
 
-    checkUrlReady(RENDERER_DEV_URL, (rendererRunning) => {
-      if (rendererRunning) {
-        console.log('Renderer dev server already running, connecting...');
-        updateLoadingStatus(100, 'Ready', 'Connecting…');
-        fadeOutAndLoadRenderer();
-        return;
-      }
+    updateLoadingStatus(15, 'Starting Mastra API…');
+    startDevProcess('Mastra API', 'dev:agent', {
+      HOST: MASTRA_SERVER_HOST,
+      PORT: MASTRA_SERVER_PORT,
+      TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
+    });
 
-      console.log('Renderer dev server not running. Starting Vite and loading splash screen...');
-      loadLoadingScreen();
-      updateLoadingStatus(30, 'Starting dev server…');
-      startDevProcess('Renderer', 'dev:renderer', {
-        MASTRA_SERVER_HOST,
-        MASTRA_SERVER_PORT,
-        TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
+    // 轮询等待 API 就绪
+    const apiStartedAt = Date.now();
+    const apiInterval = setInterval(() => {
+      checkTradingAgentReady((ready) => {
+        if (ready) {
+          clearInterval(apiInterval);
+          apiReady = true;
+          tryFinish();
+        }
       });
 
-      // Animate progress while Vite boots.
-      let viteProgress = 35;
-      const viteTimer = setInterval(() => {
-        if (viteProgress < 85) {
-          viteProgress += 2;
-          updateLoadingStatus(viteProgress, 'Starting dev server…', 'Bundling…');
-        }
-      }, 1000);
+      if (Date.now() - apiStartedAt >= 60_000) {
+        clearInterval(apiInterval);
+        showStartupError(new Error(`Timed out waiting for Mastra API at ${MASTRA_AGENTS_URL}`));
+      }
+    }, POLL_INTERVAL_MS);
+  });
 
-      // Poll for renderer readiness and clear the progress timer on success.
-      const startedAt = Date.now();
-      const interval = setInterval(() => {
-        checkUrlReady(RENDERER_DEV_URL, (ready) => {
-          if (ready) {
-            clearInterval(interval);
-            clearInterval(viteTimer);
-            console.log('Renderer is ready! Loading application.');
-            updateLoadingStatus(100, 'Ready', 'Launching…');
-            fadeOutAndLoadRenderer();
-          }
-        });
+  // ── 检查/启动 Vite Renderer（与 API 并行） ────────────────────────
+  checkUrlReady(RENDERER_DEV_URL, (running) => {
+    if (running) {
+      console.log('Renderer dev server already running.');
+      rendererAlreadyRunning = true;
+      rendererReady = true;
+      tryFinish();
+      return;
+    }
 
-        if (Date.now() - startedAt >= 60_000) {
-          clearInterval(interval);
-          clearInterval(viteTimer);
-          showStartupError(new Error(`Timed out waiting for renderer dev server at ${RENDERER_DEV_URL}`));
-        }
-      }, 500);
+    // 如果两个都在线，上面两个回调会各自触发 tryFinish
+    // 如果 renderer 不在线，启动 Vite
+    if (apiAlreadyRunning || rendererAlreadyRunning) {
+      // 另一个已经在线，只需启动 Vite
+    }
+    updateLoadingStatus(30, 'Starting dev server…');
+    startDevProcess('Renderer', 'dev:renderer', {
+      MASTRA_SERVER_HOST,
+      MASTRA_SERVER_PORT,
+      TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
     });
+
+    // Animate progress while Vite boots.
+    let viteProgress = 35;
+    const viteTimer = setInterval(() => {
+      if (viteProgress < 85) {
+        viteProgress += 2;
+        updateLoadingStatus(viteProgress, 'Starting dev server…', 'Bundling…');
+      }
+    }, 1000);
+
+    // Poll for renderer readiness
+    const rendererStartedAt = Date.now();
+    const rendererInterval = setInterval(() => {
+      checkUrlReady(RENDERER_DEV_URL, (ready) => {
+        if (ready) {
+          clearInterval(rendererInterval);
+          clearInterval(viteTimer);
+          rendererReady = true;
+          tryFinish();
+        }
+      });
+
+      if (Date.now() - rendererStartedAt >= 60_000) {
+        clearInterval(rendererInterval);
+        clearInterval(viteTimer);
+        showStartupError(new Error(`Timed out waiting for renderer dev server at ${RENDERER_DEV_URL}`));
+      }
+    }, POLL_INTERVAL_MS);
   });
 }
 

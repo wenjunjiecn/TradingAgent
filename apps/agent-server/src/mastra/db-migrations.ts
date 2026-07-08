@@ -15,8 +15,11 @@ export async function runMigrations(): Promise<void> {
   if (migrationsApplied) return;
   const db = getDb();
 
-  await migrateAgentConfigsTable(db);
-  await migrateAgentTeamsTable(db);
+  // 两张表的迁移互不依赖，并行执行以减少串行等待
+  await Promise.all([
+    migrateAgentConfigsTable(db),
+    migrateAgentTeamsTable(db),
+  ]);
   // 未来新增迁移在此添加
 
   migrationsApplied = true;
@@ -40,12 +43,19 @@ async function migrateAgentConfigsTable(db: Client): Promise<void> {
     { col: 'name', type: 'TEXT' },
     { col: 'description', type: 'TEXT' },
     { col: 'model', type: 'TEXT' },
-  ];
-  for (const { col, type } of toAdd) {
-    if (!existingCols.has(col)) {
-      await db.execute({ sql: `ALTER TABLE agent_configs ADD COLUMN ${col} ${type}` });
-      await db.execute({ sql: `UPDATE agent_configs SET ${col} = json_extract(config, '$.${col}')` });
+  ].filter(c => !existingCols.has(c.col));
+
+  if (toAdd.length > 0) {
+    // 使用 batch 并行执行所有 ALTER TABLE + UPDATE
+    const statements: Array<{ sql: string; args?: unknown[] }> = [];
+    for (const { col, type } of toAdd) {
+      statements.push({ sql: `ALTER TABLE agent_configs ADD COLUMN ${col} ${type}` });
     }
+    // SQLite 不支持单条多列 ADD，但 batch 会顺序执行所有语句
+    await db.batch(statements.map(s => ({ sql: s.sql, args: (s.args ?? []) as never[] })));
+    // 回填数据（单条 UPDATE 即可）
+    const setClauses = toAdd.map(c => `${c.col} = json_extract(config, '$.${c.col}')`).join(', ');
+    await db.execute({ sql: `UPDATE agent_configs SET ${setClauses}` });
   }
 }
 

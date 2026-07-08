@@ -39,7 +39,7 @@
     /* ── Fade-out wrapper (controlled by main process) ─────────────── */
     #root {
       opacity: 1;
-      transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       will-change: opacity;
     }
     #root.fading {
@@ -269,7 +269,7 @@
       fadeOut() {
         return new Promise((resolve) => {
           root.classList.add('fading');
-          setTimeout(resolve, 450);
+          setTimeout(resolve, 200);
         });
       },
 

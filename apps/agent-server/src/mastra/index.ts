@@ -61,14 +61,13 @@ const storage = new MastraCompositeStore({
   }),
 });
 
-// ── 动态加载 Agent 配置 ────────────────────────────────────────────────
-// 从 DB 加载所有 agent 配置并实例化为 Mastra Agent 对象。
-// 首次启动时自动从模板种子化默认投研角色（含 supervisor）。
-// supervisor 的子 agent 引用在 loadAllAgents 内部通过 subAgentIds 自动注入。
-const allAgents = await loadAllAgents();
-
-// 初始化 Agent Team 配置存储（含旧数据迁移和种子化）
-await initTeamConfigStore();
+// ── 动态加载 Agent 配置 + Team 配置（并行初始化以加速启动） ────────────────
+// loadAllAgents 和 initTeamConfigStore 操作不同的表，无依赖关系，可并行执行。
+// workspace.init() 也已在上方完成，下方并行启动 DB 相关初始化。
+const [allAgents] = await Promise.all([
+  loadAllAgents(),
+  initTeamConfigStore(),
+]);
 
 export const mastra = new Mastra({
   workflows: { tradingWorkflow },
