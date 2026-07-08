@@ -9,14 +9,14 @@
     "start": "mastra start"
   },
   "dependencies": {
-    "@mastra/core": "latest",
-    "@mastra/editor": "latest",
-    "@mastra/libsql": "latest",
+    "@mastra/core": "^1.50.1",
+    "@mastra/editor": "^0.13.6",
+    "@mastra/libsql": "^1.15.1",
     "@mastra/loggers": "latest",
-    "@mastra/mcp": "latest",
-    "@mastra/memory": "latest",
+    "@mastra/mcp": "^1.13.1",
+    "@mastra/memory": "^1.22.2",
     "ai": "^5.0.196",
-    "mastra": "latest",
+    "mastra": "^1.18.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {

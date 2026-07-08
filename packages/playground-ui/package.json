@@ -182,8 +182,8 @@
   },
   "devDependencies": {
     "@mastra/client-js": "^1.29.0",
-    "@mastra/core": "^1.48.0",
-    "@mastra/memory": "^1.22.0",
+    "@mastra/core": "^1.50.1",
+    "@mastra/memory": "^1.22.2",
     "@mastra/react": "^1.2.1",
     "@tailwindcss/postcss": "^4.2.2",
     "@tailwindcss/typography": "^0.5.19",
