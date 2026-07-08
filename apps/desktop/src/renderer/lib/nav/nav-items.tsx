@@ -1,8 +1,6 @@
 import { AgentIcon } from '@mastra/playground-ui/icons/AgentIcon';
-import { McpServerIcon } from '@mastra/playground-ui/icons/McpServerIcon';
 import { SettingsIcon } from '@mastra/playground-ui/icons/SettingsIcon';
 import { ToolsIcon } from '@mastra/playground-ui/icons/ToolsIcon';
-import { WorkflowIcon } from '@mastra/playground-ui/icons/WorkflowIcon';
 import { WorkspacesIcon } from '@mastra/playground-ui/icons/WorkspacesIcon';
 import { BarChart3, FileText, Users, LineChart, UsersRound } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
@@ -77,18 +75,6 @@ export const mainNav: NavSection[] = [
         name: 'nav:items.agentConfig',
         url: '/agents',
         Icon: AgentIcon,
-        isOnMastraPlatform: true,
-      },
-      {
-        name: 'nav:items.workflows',
-        url: '/workflows',
-        Icon: WorkflowIcon,
-        isOnMastraPlatform: true,
-      },
-      {
-        name: 'nav:items.mcpServers',
-        url: '/mcps',
-        Icon: McpServerIcon,
         isOnMastraPlatform: true,
       },
       {
