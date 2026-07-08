@@ -36,6 +36,7 @@ function safeError(...args: unknown[]): void {
 }
 
 let mainWindow: BrowserWindow | null;
+let isLoadingScreenActive = false;
 const devProcesses: ChildProcess[] = [];
 const MASTRA_SERVER_HOST = '127.0.0.1';
 const MASTRA_SERVER_PORT = process.env.MASTRA_SERVER_PORT || process.env.PORT || '4111';
@@ -284,6 +285,7 @@ function loadLoadingScreen() {
     return;
   }
 
+  isLoadingScreenActive = true;
   mainWindow.loadFile(LOADING_SCREEN, {
     query: {
       port: MASTRA_SERVER_PORT,
@@ -291,10 +293,25 @@ function loadLoadingScreen() {
   });
 }
 
+/** Send a status update to the loading screen (progress bar + text). */
+function updateLoadingStatus(percent: number, label: string, detail?: string): void {
+  if (!mainWindow || !isLoadingScreenActive) {
+    return;
+  }
+
+  const escapedLabel = label.replace(/'/g, "\\'");
+  const escapedDetail = (detail || '').replace(/'/g, "\\'");
+  mainWindow.webContents.executeJavaScript(
+    `window.__tradingAgentLoading && window.__tradingAgentLoading.update(${percent}, '${escapedLabel}', '${escapedDetail}');`
+  ).catch(() => { /* loading screen may not be ready yet */ });
+}
+
 function loadRenderer() {
   if (!mainWindow) {
     return;
   }
+
+  isLoadingScreenActive = false;
 
   if (app.isPackaged) {
     mainWindow.loadFile(RENDERER_ENTRY);
@@ -304,6 +321,26 @@ function loadRenderer() {
   mainWindow.loadURL(RENDERER_DEV_URL);
 }
 
+/** Fade out the loading screen, then load the renderer. */
+async function fadeOutAndLoadRenderer(): Promise<void> {
+  if (!mainWindow) {
+    return;
+  }
+
+  // If the loading screen is active, trigger its fade-out transition first.
+  if (isLoadingScreenActive) {
+    try {
+      await mainWindow.webContents.executeJavaScript(
+        'window.__tradingAgentLoading && window.__tradingAgentLoading.fadeOut();'
+      );
+    } catch {
+      // If executeJavaScript fails, proceed immediately.
+    }
+  }
+
+  loadRenderer();
+}
+
 function showStartupError(error: unknown) {
   console.error('Failed to start Trading Agent desktop shell:', error);
   if (!mainWindow) {
@@ -311,6 +348,27 @@ function showStartupError(error: unknown) {
   }
 
   const message = error instanceof Error ? error.message : String(error);
+
+  // If the loading screen is active, use its built-in error state for a consistent UI.
+  if (isLoadingScreenActive) {
+    const escapedMessage = message.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+    mainWindow.webContents.executeJavaScript(
+      `window.__tradingAgentLoading && window.__tradingAgentLoading.showError('${escapedMessage}');`
+    ).catch(() => {
+      // Fallback: load a data URL error page.
+      isLoadingScreenActive = false;
+      loadErrorPage(message);
+    });
+    return;
+  }
+
+  loadErrorPage(message);
+}
+
+function loadErrorPage(message: string): void {
+  if (!mainWindow) {
+    return;
+  }
   mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
     <!doctype html>
     <html>
@@ -323,7 +381,7 @@ function showStartupError(error: unknown) {
             height: 100vh;
             display: grid;
             place-items: center;
-            background: #101113;
+            background: #09090b;
             color: #f4f4f5;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           }
@@ -340,7 +398,7 @@ function showStartupError(error: unknown) {
             border: 1px solid #303236;
             border-radius: 8px;
             padding: 12px;
-            background: #181a1f;
+            background: #18181b;
             color: #d4d4d8;
           }
         </style>
@@ -355,36 +413,34 @@ function showStartupError(error: unknown) {
   `)}`);
 }
 
-function pollRendererAndLoad() {
-  const startedAt = Date.now();
-  const interval = setInterval(() => {
-    checkUrlReady(RENDERER_DEV_URL, (ready) => {
-      if (ready) {
-        clearInterval(interval);
-        console.log('Renderer is ready! Loading application.');
-        loadRenderer();
-      }
-    });
-
-    if (Date.now() - startedAt >= 60_000) {
-      clearInterval(interval);
-      showStartupError(new Error(`Timed out waiting for renderer dev server at ${RENDERER_DEV_URL}`));
-    }
-  }, 1000);
-}
-
 function startMissingDevServices() {
   if (app.isPackaged) {
     loadLoadingScreen();
 
+    updateLoadingStatus(10, 'Checking server…');
+
     waitForTradingAgentReady(1000)
       .catch(() => {
+        updateLoadingStatus(20, 'Starting agent server…');
         startEmbeddedAgentServer();
-        return waitForTradingAgentReady(60000);
+
+        // Progress animation while the embedded server boots.
+        let bootProgress = 25;
+        const bootTimer = setInterval(() => {
+          if (bootProgress < 80) {
+            bootProgress += 1;
+            updateLoadingStatus(bootProgress, 'Starting agent server…', `Booting (${bootProgress}%)`);
+          }
+        }, 800);
+
+        return waitForTradingAgentReady(60000).finally(() => {
+          clearInterval(bootTimer);
+        });
       })
       .then(() => {
         console.log('Embedded Mastra API is ready. Loading application.');
-        loadRenderer();
+        updateLoadingStatus(95, 'Server ready', 'Loading application…');
+        fadeOutAndLoadRenderer();
       })
       .catch((error) => {
         showStartupError(error);
@@ -392,10 +448,12 @@ function startMissingDevServices() {
     return;
   }
 
+  // ── Dev mode ──────────────────────────────────────────────────────
   checkTradingAgentReady((apiRunning) => {
     if (apiRunning) {
       console.log('Mastra API already running.');
     } else {
+      updateLoadingStatus(15, 'Starting Mastra API…');
       startDevProcess('Mastra API', 'dev:agent', {
         HOST: MASTRA_SERVER_HOST,
         PORT: MASTRA_SERVER_PORT,
@@ -406,18 +464,48 @@ function startMissingDevServices() {
     checkUrlReady(RENDERER_DEV_URL, (rendererRunning) => {
       if (rendererRunning) {
         console.log('Renderer dev server already running, connecting...');
-        loadRenderer();
+        updateLoadingStatus(100, 'Ready', 'Connecting…');
+        fadeOutAndLoadRenderer();
         return;
       }
 
       console.log('Renderer dev server not running. Starting Vite and loading splash screen...');
       loadLoadingScreen();
+      updateLoadingStatus(30, 'Starting dev server…');
       startDevProcess('Renderer', 'dev:renderer', {
         MASTRA_SERVER_HOST,
         MASTRA_SERVER_PORT,
         TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
       });
-      pollRendererAndLoad();
+
+      // Animate progress while Vite boots.
+      let viteProgress = 35;
+      const viteTimer = setInterval(() => {
+        if (viteProgress < 85) {
+          viteProgress += 2;
+          updateLoadingStatus(viteProgress, 'Starting dev server…', 'Bundling…');
+        }
+      }, 1000);
+
+      // Poll for renderer readiness and clear the progress timer on success.
+      const startedAt = Date.now();
+      const interval = setInterval(() => {
+        checkUrlReady(RENDERER_DEV_URL, (ready) => {
+          if (ready) {
+            clearInterval(interval);
+            clearInterval(viteTimer);
+            console.log('Renderer is ready! Loading application.');
+            updateLoadingStatus(100, 'Ready', 'Launching…');
+            fadeOutAndLoadRenderer();
+          }
+        });
+
+        if (Date.now() - startedAt >= 60_000) {
+          clearInterval(interval);
+          clearInterval(viteTimer);
+          showStartupError(new Error(`Timed out waiting for renderer dev server at ${RENDERER_DEV_URL}`));
+        }
+      }, 500);
     });
   });
 }
@@ -428,6 +516,7 @@ function createWindow() {
     height: 900,
     title: 'Trading Agent',
     show: false, // Don't show until ready-to-show
+    backgroundColor: '#09090b', // Prevent white flash before loading screen paints
     titleBarStyle: 'hidden',
     webPreferences: {
       preload: PRELOAD_PATH,

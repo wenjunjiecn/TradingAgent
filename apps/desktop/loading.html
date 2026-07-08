@@ -6,11 +6,21 @@
   <style>
     :root {
       --bg: #09090b;
+      --bg-elevated: #18181b;
       --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
       --primary: #10b981;
       --primary-glow: rgba(16, 185, 129, 0.15);
+      --accent: #3b82f6;
       --accent-gradient: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+      --border: rgba(255, 255, 255, 0.06);
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       background-color: var(--bg);
       color: var(--text);
@@ -23,96 +33,258 @@
       margin: 0;
       overflow: hidden;
       user-select: none;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* ── Fade-out wrapper (controlled by main process) ─────────────── */
+    #root {
+      opacity: 1;
+      transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: opacity;
+    }
+    #root.fading {
+      opacity: 0;
+    }
+
     .container {
       text-align: center;
-      animation: fadeIn 0.8s ease-out;
+      animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      width: 320px;
     }
-    h1 {
-      font-size: 2.2rem;
+
+    /* ── Logo / Brand ──────────────────────────────────────────────── */
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 2.5rem;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
+      animation: breathe 3s ease-in-out infinite;
+    }
+    .brand-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+    .brand-name {
+      font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.025em;
+      letter-spacing: -0.02em;
       background: var(--accent-gradient);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    p {
-      color: #a1a1aa;
-      font-size: 1.1rem;
-      margin-bottom: 2rem;
-    }
-    .spinner-box {
-      position: relative;
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 2rem;
-    }
-    .spinner {
-      box-sizing: border-box;
+
+    /* ── Progress bar ──────────────────────────────────────────────── */
+    .progress-track {
       width: 100%;
+      height: 4px;
+      background: var(--bg-elevated);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .progress-fill {
       height: 100%;
-      border: 3px solid transparent;
-      border-top-color: var(--primary);
-      border-bottom-color: #3b82f6;
-      border-radius: 50%;
-      animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-      box-shadow: 0 0 15px var(--primary-glow);
+      width: 0%;
+      border-radius: 999px;
+      background: var(--accent-gradient);
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
     }
-    .pulse-ring {
+    .progress-fill::after {
+      content: '';
       position: absolute;
-      top: -10px;
-      left: -10px;
-      right: -10px;
-      bottom: -10px;
-      border: 1px solid rgba(16, 185, 129, 0.1);
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%
+      );
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    /* ── Status text ───────────────────────────────────────────────── */
+    .status-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.01em;
+      min-height: 1.2em;
+      transition: opacity 0.3s ease;
+    }
+    .status-detail {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 0.4rem;
+      min-height: 1em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Spinner (subtle, below progress) ──────────────────────────── */
+    .spinner-ring {
+      width: 28px;
+      height: 28px;
+      margin: 1.5rem auto 0;
+      border: 2px solid var(--bg-elevated);
+      border-top-color: var(--primary);
       border-radius: 50%;
-      animation: pulse 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
+      animation: spin 0.8s linear infinite;
     }
+
+    /* ── Animations ────────────────────────────────────────────────── */
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      to { transform: rotate(360deg); }
     }
-    @keyframes pulse {
-      0% { transform: scale(0.9); opacity: 0; }
-      50% { opacity: 0.5; }
-      100% { transform: scale(1.15); opacity: 0; }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .status-text {
-      font-size: 0.9rem;
-      color: #71717a;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25); }
+      50% { transform: scale(1.05); box-shadow: 0 4px 28px rgba(16, 185, 129, 0.4); }
+    }
+
+    /* ── Error state ───────────────────────────────────────────────── */
+    .error-state {
+      display: none;
+    }
+    .error-state.visible {
+      display: block;
+    }
+    .error-state .brand-icon {
+      background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+      animation: none;
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.25);
+    }
+    .error-state .error-message {
+      font-size: 0.85rem;
+      color: #f87171;
+      margin-top: 1rem;
+      line-height: 1.5;
+      text-align: left;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .error-state .retry-hint {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="spinner-box">
-      <div class="spinner"></div>
-      <div class="pulse-ring"></div>
+  <div id="root">
+    <div class="container" id="loading-state">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 13h2l2-6 4 12 3-9 2 5h5" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="brand-name">Trading Agent</span>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <div class="status-label" id="status-label">Initializing…</div>
+      <div class="status-detail" id="status-detail"></div>
+
+      <div class="spinner-ring"></div>
     </div>
-    <h1>Trading Agent</h1>
-    <p>Starting Mastra Dev Server...</p>
-    <div class="status-text" id="status">Connecting to localhost</div>
+
+    <!-- Error state (shown if startup fails) -->
+    <div class="container error-state" id="error-state">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L1 21h22L12 2zm0 6v6m0 3v.01" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="brand-name" style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Startup Failed</span>
+      </div>
+      <div class="error-message" id="error-message"></div>
+      <div class="retry-hint">Please restart the application. If the problem persists, check your configuration.</div>
+    </div>
   </div>
+
   <script>
-    const statusEl = document.getElementById('status');
+    // ── State management ──────────────────────────────────────────────
+    const root = document.getElementById('root');
+    const progressFill = document.getElementById('progress-fill');
+    const statusLabel = document.getElementById('status-label');
+    const statusDetail = document.getElementById('status-detail');
+    const loadingState = document.getElementById('loading-state');
+    const errorState = document.getElementById('error-state');
+    const errorMessage = document.getElementById('error-message');
+
     const params = new URLSearchParams(window.location.search);
     const port = params.get('port') || '4111';
-    let dots = '';
-    const updateStatus = () => {
-      statusEl.textContent = `Connecting to localhost:${port}${dots}`;
+
+    // ── Exposed API for main process (via executeJavaScript) ──────────
+    window.__tradingAgentLoading = {
+      /**
+       * Update the progress bar and status text.
+       * @param {number} percent - 0 to 100
+       * @param {string} label - main status line
+       * @param {string} [detail] - optional secondary line
+       */
+      update(percent, label, detail) {
+        progressFill.style.width = Math.min(100, Math.max(0, percent)) + '%';
+        statusLabel.style.opacity = '0';
+        setTimeout(() => {
+          statusLabel.textContent = label;
+          statusDetail.textContent = detail || '';
+          statusLabel.style.opacity = '1';
+        }, 150);
+      },
+
+      /**
+       * Trigger fade-out transition before the main app loads.
+       * Returns a Promise that resolves when the fade is complete.
+       */
+      fadeOut() {
+        return new Promise((resolve) => {
+          root.classList.add('fading');
+          setTimeout(resolve, 450);
+        });
+      },
+
+      /**
+       * Show an error state with the given message.
+       */
+      showError(message) {
+        loadingState.style.display = 'none';
+        errorState.classList.add('visible');
+        errorMessage.textContent = message || 'Unknown error';
+      },
     };
-    updateStatus();
-    setInterval(() => {
-      dots = dots.length >= 3 ? '' : dots + '.';
-      updateStatus();
-    }, 500);
+
+    // ── Initial status ────────────────────────────────────────────────
+    window.__tradingAgentLoading.update(5, 'Initializing…', `localhost:${port}`);
   </script>
 </body>
 </html>
