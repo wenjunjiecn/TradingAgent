@@ -9,6 +9,7 @@ import {
 } from '../agents/agent-registry';
 import { agentTemplates } from '../agents/agent-templates';
 import { teamRoutes } from './team-routes';
+import { toolRoutes } from './tool-routes';
 import {
   initReportStore,
   listReports,
@@ -309,6 +310,8 @@ export const researchRoutes: ApiRoute[] = [
   createAgentFromTemplateRoute,
   // Agent Team configs + execution
   ...teamRoutes,
+  // Tool configs
+  ...toolRoutes,
   // Market data
   getMarketDataRoute,
   getIndicatorsRoute,

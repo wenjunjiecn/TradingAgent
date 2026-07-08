@@ -18,6 +18,8 @@ import zhCNMarket from './locales/zh-CN/market.json';
 import enMarket from './locales/en/market.json';
 import zhCNSettings from './locales/zh-CN/settings.json';
 import enSettings from './locales/en/settings.json';
+import zhCNTools from './locales/zh-CN/tools.json';
+import enTools from './locales/en/tools.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'zh-CN', label: '中文', flag: '🇨🇳' },
@@ -36,6 +38,7 @@ const resources = {
     teams: zhCNTeams,
     market: zhCNMarket,
     settings: zhCNSettings,
+    tools: zhCNTools,
   },
   en: {
     common: enCommon,
@@ -46,6 +49,7 @@ const resources = {
     teams: enTeams,
     market: enMarket,
     settings: enSettings,
+    tools: enTools,
   },
 } as const;
 
@@ -56,7 +60,7 @@ i18n
     resources,
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: ['zh-CN', 'en'],
-    ns: ['common', 'nav', 'dashboard', 'collaboration', 'reports', 'teams', 'market', 'settings'],
+    ns: ['common', 'nav', 'dashboard', 'collaboration', 'reports', 'teams', 'market', 'settings', 'tools'],
     defaultNS: 'common',
     interpolation: {
       escapeValue: false,

@@ -4,3 +4,4 @@ export * from './news.js';
 export * from './fundamentals.js';
 export * from './agent-config.js';
 export * from './team-config.js';
+export * from './tool-config.js';
