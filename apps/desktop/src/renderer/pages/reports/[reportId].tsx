@@ -6,6 +6,7 @@ import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useReport } from '@/lib/research-api';
 import type { AgentOpinion, RiskItem, TrackingCondition } from '@trading-agent/shared';
+import { ReportFollowUpChat } from './components/ReportFollowUpChat';
 
 const ACTION_STYLES: Record<string, string> = {
   BUY: 'text-green-500 bg-green-500/10',
@@ -206,6 +207,9 @@ export default function ReportDetailPage() {
           <p className="mt-3 text-xs text-neutral3">{report.signal.reason}</p>
         </div>
       )}
+
+      {/* 报告追问 Chat */}
+      {report.id && <ReportFollowUpChat reportId={report.id} />}
     </PageLayout>
   );
 }

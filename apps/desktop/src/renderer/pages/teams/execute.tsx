@@ -1,7 +1,7 @@
 import { Button } from '@mastra/playground-ui/components/Button';
 import { ErrorState } from '@mastra/playground-ui/components/ErrorState';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
-import { ArrowLeft, Play, Loader2, CheckCircle2, XCircle, Users, GitBranch, Swords, Layers, ScanLine, Trash2 } from 'lucide-react';
+import { ArrowLeft, Play, Loader2, CheckCircle2, XCircle, Users, GitBranch, Swords, Layers, ScanLine, Trash2, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
@@ -119,6 +119,10 @@ export default function TeamExecutePage() {
           </Button>
           <h1 className="font-display text-xl font-bold text-neutral6">{team.name}</h1>
         </div>
+        <Button variant="outline" size="sm" onClick={() => navigate(`/teams/${teamId}/chat`)}>
+          <MessageCircle className="mr-1 size-3.5" />
+          Chat 模式
+        </Button>
       </div>
 
       {/* 团队信息卡片 */}

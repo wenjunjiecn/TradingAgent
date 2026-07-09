@@ -9,6 +9,7 @@ import {
 } from '../agents/agent-registry';
 import { agentTemplates } from '../agents/agent-templates';
 import { teamRoutes } from './team-routes';
+import { teamChatRoutes } from './team-chat-routes';
 import { toolRoutes } from './tool-routes';
 import { skillRoutes } from './skill-routes';
 import {
@@ -311,6 +312,8 @@ export const researchRoutes: ApiRoute[] = [
   createAgentFromTemplateRoute,
   // Agent Team configs + execution
   ...teamRoutes,
+  // Agent Team chat (streaming)
+  ...teamChatRoutes,
   // Tool configs
   ...toolRoutes,
   // Skill configs

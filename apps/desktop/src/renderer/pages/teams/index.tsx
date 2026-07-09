@@ -1,6 +1,6 @@
 import { Button } from '@mastra/playground-ui/components/Button';
 import { PageLayout } from '@mastra/playground-ui/components/PageLayout';
-import { Users, Plus, Play, Pencil, Trash2, GitBranch, Swords, Layers, ScanLine } from 'lucide-react';
+import { Users, Plus, Play, Pencil, Trash2, GitBranch, Swords, Layers, ScanLine, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -167,12 +167,15 @@ export default function TeamsListPage() {
                     <Play className="mr-1 size-3.5" />
                     {t('teams:list.execute')}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/teams/${team.id}/edit`)}>
-                    <Pencil className="mr-1 size-3.5" />
-                    {t('teams:list.editButton')}
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/teams/${team.id}/chat`)}>
+                    <MessageCircle className="mr-1 size-3.5" />
+                    Chat
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => navigate(`/teams/${team.id}/edit`)}>
+                    <Pencil className="size-3.5" />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(team.id, team.name)}
                     className="ml-auto text-red-400 hover:bg-red-500/10"

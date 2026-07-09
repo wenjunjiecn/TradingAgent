@@ -96,6 +96,7 @@ import MarketDataPage from './pages/market-data';
 import TeamsListPage from './pages/teams';
 import TeamEditPage from './pages/teams/edit';
 import TeamExecutePage from './pages/teams/execute';
+import TeamChatPage from './pages/teams/chat';
 import { AgentBuilderEditionLayout, AgentBuilderLayout } from '@/domains/agent-builder/layouts/agent-builder-layout';
 import { AgentCrumb, AgentToolCrumb } from '@/domains/agents/agent-crumb';
 import { AgentLayout } from '@/domains/agents/agent-layout';
@@ -730,6 +731,7 @@ export const routes: RouteObject[] = [
 { path: '/teams/create', element: <TeamEditPage />, handle: navHandleWithChildren('/teams', [{ id: 'create-team', label: 'teams:breadcrumbs.create' }]) },
   { path: '/teams/:teamId/edit', element: <TeamEditPage />, handle: navHandleWithChildren('/teams', [{ id: 'edit-team', label: 'teams:breadcrumbs.edit' }]) },
   { path: '/teams/:teamId/execute', element: <TeamExecutePage />, handle: navHandleWithChildren('/teams', [{ id: 'execute-team', label: 'teams:breadcrumbs.execute' }]) },
+  { path: '/teams/:teamId/chat', element: <TeamChatPage />, handle: navHandleWithChildren('/teams', [{ id: 'chat-team', label: 'Chat' }]) },
 
       {
         index: true,
