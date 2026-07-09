@@ -1,6 +1,7 @@
 import { Blocks } from 'lucide-react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { AgentCMSBlocks } from '../agent-cms-blocks';
 import type { AgentFormValues } from './utils/form-validation';
@@ -12,11 +13,12 @@ interface AgentEditMainProps {
 }
 
 export function AgentEditMainContentBlocks({ form, readOnly: _readOnly = false }: AgentEditMainProps) {
+  const { t } = useTranslation('agents');
   const schema = form.watch('variables');
 
   return (
     <div className="grid grid-rows-[auto_1fr] gap-6 h-full px-4 pb-4">
-      <SectionHeader title="Instruction blocks" subtitle="Add instruction blocks to your agent." icon={<Blocks />} />
+      <SectionHeader title={t('instructionBlocks.title')} subtitle={t('instructionBlocks.subtitle')} icon={<Blocks />} />
 
       <div className="h-full overflow-y-auto">
         <Controller
@@ -27,7 +29,7 @@ export function AgentEditMainContentBlocks({ form, readOnly: _readOnly = false }
             <AgentCMSBlocks
               items={field.value ?? []}
               onChange={field.onChange}
-              placeholder="Enter content..."
+              placeholder={t('instructionBlocks.contentPlaceholder')}
               schema={schema}
             />
           )}

@@ -3,21 +3,22 @@ import type { useSidebarDescriptions } from './use-sidebar-descriptions';
 
 export interface AgentCmsSection {
   name: string;
+  nameKey: string;
   pathSuffix: string;
   descriptionKey: keyof ReturnType<typeof useSidebarDescriptions>;
   required: boolean;
 }
 
 export const AGENT_CMS_SECTIONS: AgentCmsSection[] = [
-  { name: 'Identity', pathSuffix: '', descriptionKey: 'identity', required: true },
-  { name: 'Instructions', pathSuffix: '/instruction-blocks', descriptionKey: 'instructions', required: true },
-  { name: 'Tools', pathSuffix: '/tools', descriptionKey: 'tools', required: false },
-  { name: 'Agents', pathSuffix: '/agents', descriptionKey: 'agents', required: false },
-  { name: 'Scorers', pathSuffix: '/scorers', descriptionKey: 'scorers', required: false },
-  { name: 'Workflows', pathSuffix: '/workflows', descriptionKey: 'workflows', required: false },
-  { name: 'Skills', pathSuffix: '/skills', descriptionKey: 'skills', required: false },
-  { name: 'Memory', pathSuffix: '/memory', descriptionKey: 'memory', required: false },
-  { name: 'Variables', pathSuffix: '/variables', descriptionKey: 'variables', required: false },
+  { name: 'Identity', nameKey: 'cms.sidebar.identity', pathSuffix: '', descriptionKey: 'identity', required: true },
+  { name: 'Instructions', nameKey: 'cms.sidebar.instructions', pathSuffix: '/instruction-blocks', descriptionKey: 'instructions', required: true },
+  { name: 'Tools', nameKey: 'cms.sidebar.tools', pathSuffix: '/tools', descriptionKey: 'tools', required: false },
+  { name: 'Agents', nameKey: 'cms.sidebar.agents', pathSuffix: '/agents', descriptionKey: 'agents', required: false },
+  { name: 'Scorers', nameKey: 'cms.sidebar.scorers', pathSuffix: '/scorers', descriptionKey: 'scorers', required: false },
+  { name: 'Workflows', nameKey: 'cms.sidebar.workflows', pathSuffix: '/workflows', descriptionKey: 'workflows', required: false },
+  { name: 'Skills', nameKey: 'cms.sidebar.skills', pathSuffix: '/skills', descriptionKey: 'skills', required: false },
+  { name: 'Memory', nameKey: 'cms.sidebar.memory', pathSuffix: '/memory', descriptionKey: 'memory', required: false },
+  { name: 'Variables', nameKey: 'cms.sidebar.variables', pathSuffix: '/variables', descriptionKey: 'variables', required: false },
 ];
 
 /** Sections available when editing a code-defined agent (override mode) */

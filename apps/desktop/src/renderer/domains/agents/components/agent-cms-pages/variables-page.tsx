@@ -4,6 +4,7 @@ import { ScrollArea } from '@mastra/playground-ui/components/ScrollArea';
 import type { JsonSchema } from '@mastra/playground-ui/utils/json-schema';
 import { Plus, PlusIcon } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWatch } from 'react-hook-form';
 
 import { useAgentEditFormContext } from '../../context/agent-edit-form-context';
@@ -12,21 +13,23 @@ function RecursiveFieldRenderer({
   field,
   parentPath,
   depth,
+  t,
 }: {
   field: SchemaField;
   parentPath: string[];
   depth: number;
+  t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
   return (
     <div className="py-2 ">
       <JSONSchemaForm.Field key={field.id} field={field} parentPath={parentPath} depth={depth}>
         <div className="space-y-2 px-2">
           <div className="flex flex-row gap-4 items-center">
-            <JSONSchemaForm.FieldName placeholder="Variable name" className="w-64" />
-            <JSONSchemaForm.FieldType placeholder="Type" />
+            <JSONSchemaForm.FieldName placeholder={t('variables.variableNamePlaceholder')} className="w-64" />
+            <JSONSchemaForm.FieldType placeholder={t('variables.typePlaceholder')} />
             <JSONSchemaForm.FieldOptional />
             <JSONSchemaForm.FieldNullable />
-            <JSONSchemaForm.FieldRemove aria-label="Remove Variable" />
+            <JSONSchemaForm.FieldRemove aria-label={t('variables.removeVariable')} />
           </div>
         </div>
 
@@ -38,12 +41,13 @@ function RecursiveFieldRenderer({
                 field={nestedField}
                 parentPath={nestedContext.parentPath}
                 depth={nestedContext.depth}
+                t={t}
               />
             )}
           </JSONSchemaForm.FieldList>
           <JSONSchemaForm.AddField variant="ghost" size="sm" className="mt-2">
             <PlusIcon className="w-3 h-3 mr-1" />
-            Add nested variable
+            {t('variables.addNestedVariable')}
           </JSONSchemaForm.AddField>
         </JSONSchemaForm.NestedFields>
       </JSONSchemaForm.Field>
@@ -52,6 +56,7 @@ function RecursiveFieldRenderer({
 }
 
 export function VariablesPage() {
+  const { t } = useTranslation('agents');
   const { form, readOnly } = useAgentEditFormContext();
   const { control } = form;
 
@@ -73,14 +78,14 @@ export function VariablesPage() {
           <JSONSchemaForm.Root onChange={handleVariablesChange} defaultValue={initialFields} maxDepth={5}>
             <JSONSchemaForm.FieldList>
               {(field, _index, { parentPath, depth }) => (
-                <RecursiveFieldRenderer key={field.id} field={field} parentPath={parentPath} depth={depth} />
+                <RecursiveFieldRenderer key={field.id} field={field} parentPath={parentPath} depth={depth} t={t} />
               )}
             </JSONSchemaForm.FieldList>
 
             <div className="p-2">
               <JSONSchemaForm.AddField>
                 <Plus />
-                Add variable
+                {t('variables.addVariable')}
               </JSONSchemaForm.AddField>
             </div>
           </JSONSchemaForm.Root>

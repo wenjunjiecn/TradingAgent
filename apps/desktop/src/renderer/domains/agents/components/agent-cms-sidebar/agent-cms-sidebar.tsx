@@ -3,6 +3,7 @@ import { Txt } from '@mastra/playground-ui/components/Txt';
 import { cn } from '@mastra/playground-ui/utils/cn';
 import { Check } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useAgentEditFormContext } from '../../context/agent-edit-form-context';
 import { isActive } from './agent-cms-is-active';
@@ -34,6 +35,7 @@ interface AgentCmsSidebarProps {
 }
 
 export function AgentCmsSidebar({ basePath, currentPath, versionId }: AgentCmsSidebarProps) {
+  const { t } = useTranslation('agents');
   const { form, isCodeAgentOverride, editorConfig } = useAgentEditFormContext();
   const descriptions = useSidebarDescriptions(form.control);
   const features = useBuilderAgentFeatures();
@@ -51,7 +53,7 @@ export function AgentCmsSidebar({ basePath, currentPath, versionId }: AgentCmsSi
               <SidebarLink
                 key={section.descriptionKey}
                 index={index}
-                name={section.name}
+                name={t(section.nameKey)}
                 pathSuffix={section.pathSuffix}
                 isLast={index === sections.length - 1}
                 basePath={basePath}

@@ -4,6 +4,7 @@ import { ScrollArea } from '@mastra/playground-ui/components/ScrollArea';
 import { SectionRoot, SubSectionRoot } from '@mastra/playground-ui/components/Section';
 import { Textarea } from '@mastra/playground-ui/components/Textarea';
 import { Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { useAgentEditFormContext } from '../../context/agent-edit-form-context';
 import { SectionHeader } from '@/domains/cms';
@@ -11,6 +12,7 @@ import { SubSectionHeader } from '@/domains/cms/components/section/section-heade
 import { LLMProviders, LLMModels } from '@/domains/llm';
 
 export function InformationPage() {
+  const { t } = useTranslation('agents');
   const { form, readOnly } = useAgentEditFormContext();
   const {
     register,
@@ -21,15 +23,15 @@ export function InformationPage() {
   return (
     <ScrollArea className="h-full">
       <SectionRoot>
-        <SectionHeader title="Identity" subtitle="Define your agent's name, description, and model." />
+        <SectionHeader title={t('identity.title')} subtitle={t('identity.subtitle')} />
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="agent-name" className="text-xs text-neutral5">
-            Name <span className="text-accent2">*</span>
+            {t('identity.name')} <span className="text-accent2">*</span>
           </Label>
           <Input
             id="agent-name"
-            placeholder="My Agent"
+            placeholder={t('identity.namePlaceholder')}
             variant="outline"
             {...register('name')}
             error={!!errors.name}
@@ -40,11 +42,11 @@ export function InformationPage() {
 
         <div className="flex flex-col gap-1.5 pb-8">
           <Label htmlFor="agent-description" className="text-xs text-neutral5">
-            Description
+            {t('identity.description')}
           </Label>
           <Textarea
             id="agent-description"
-            placeholder="Describe what this agent does"
+            placeholder={t('identity.descriptionPlaceholder')}
             variant="outline"
             {...register('description')}
             error={!!errors.description}
@@ -55,11 +57,11 @@ export function InformationPage() {
 
         <div className="border-t border-border1 pt-8">
           <SubSectionRoot>
-            <SubSectionHeader title="Model Configuration" />
+            <SubSectionHeader title={t('identity.modelConfiguration')} />
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs text-neutral5">
-                  Provider <span className="text-accent2">*</span>
+                  {t('identity.provider')} <span className="text-accent2">*</span>
                 </Label>
                 <Controller
                   name="model.provider"
@@ -77,7 +79,7 @@ export function InformationPage() {
 
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs text-neutral5">
-                  Model <span className="text-accent2">*</span>
+                  {t('identity.model')} <span className="text-accent2">*</span>
                 </Label>
                 <Controller
                   name="model.name"

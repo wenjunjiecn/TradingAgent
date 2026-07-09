@@ -5,6 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { Control } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import type { AgentFormValues, EntityConfig } from '../utils/form-validation';
 import { EntityAccordionItem } from '@/domains/cms';
@@ -18,6 +19,7 @@ interface WorkflowsSectionProps {
 }
 
 export function WorkflowsSection({ control, error, readOnly = false }: WorkflowsSectionProps) {
+  const { t } = useTranslation('agents');
   const [isOpen, setIsOpen] = useState(false);
   const { data: workflows, isLoading } = useWorkflows();
   const selectedWorkflows = useWatch({ control, name: 'workflows' });
@@ -43,7 +45,7 @@ export function WorkflowsSection({ control, error, readOnly = false }: Workflows
         <CollapsibleTrigger className="flex items-center gap-1 w-full p-3 bg-surface3">
           <ChevronRight className="h-4 w-4 text-neutral3" />
           <SectionTitle icon={<WorkflowIcon className="text-accent3" />}>
-            Workflows{count > 0 && <span className="text-neutral3 font-normal">({count})</span>}
+            {t('workflows.title')}{count > 0 && <span className="text-neutral3 font-normal">({count})</span>}
           </SectionTitle>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -85,9 +87,9 @@ export function WorkflowsSection({ control, error, readOnly = false }: Workflows
                       options={options}
                       value={selectedIds}
                       onValueChange={handleValueChange}
-                      placeholder="Select workflows..."
-                      searchPlaceholder="Search workflows..."
-                      emptyText="No workflows available"
+                      placeholder={t('workflows.selectPlaceholder')}
+                      searchPlaceholder={t('workflows.searchPlaceholder')}
+                      emptyText={t('workflows.emptyText')}
                       disabled={isLoading || readOnly}
                       error={error}
                     />

@@ -5,6 +5,7 @@ import { cn } from '@mastra/playground-ui/utils/cn';
 import { Info } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFilteredProviders } from '../hooks/use-filtered-providers';
 import { useLLMProviders } from '../hooks/use-llm-providers';
 import { cleanProviderId, findProviderById } from '../utils';
@@ -34,6 +35,7 @@ export const LLMProviders = ({
   container,
   disabled,
 }: LLMProvidersProps) => {
+  const { t } = useTranslation('agents');
   const { data: dataProviders, isLoading: providersLoading } = useLLMProviders();
   const allProviders = dataProviders?.providers || [];
 
@@ -55,7 +57,7 @@ export const LLMProviders = ({
             className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${
               provider.connected ? 'bg-accent1' : 'bg-accent2'
             }`}
-            title={provider.connected ? 'Connected' : 'Not connected'}
+            title={provider.connected ? t('llm.connected') : t('llm.notConnected')}
           />
         </div>
       ),
@@ -94,9 +96,9 @@ export const LLMProviders = ({
       options={providerOptions}
       value={currentModelProvider}
       onValueChange={handleValueChange}
-      placeholder="Select provider..."
-      searchPlaceholder="Search providers..."
-      emptyText="No providers found"
+      placeholder={t('llm.selectProvider')}
+      searchPlaceholder={t('llm.searchProviders')}
+      emptyText={t('llm.noProviders')}
       variant={variant}
       size={size}
       className={className}

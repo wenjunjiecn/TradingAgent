@@ -11,6 +11,7 @@ import { Trash2, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { Control } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import type { AgentFormValues, ScorerConfig } from '../utils/form-validation';
 import { SectionTitle } from '@/domains/cms/components/section/section-title';
@@ -23,6 +24,7 @@ interface ScorersSectionProps {
 }
 
 export function ScorersSection({ control, error, readOnly = false }: ScorersSectionProps) {
+  const { t } = useTranslation('agents');
   const [isOpen, setIsOpen] = useState(false);
   const { data: scorers, isLoading } = useScorers();
   const selectedScorers = useWatch({ control, name: 'scorers' });
@@ -89,7 +91,7 @@ export function ScorersSection({ control, error, readOnly = false }: ScorersSect
                   <CollapsibleTrigger className="flex items-center gap-1 w-full">
                     <ChevronRight className="h-4 w-4 text-neutral3" />
                     <SectionTitle icon={<JudgeIcon className="text-neutral3" />}>
-                      Scorers{count > 0 && <span className="text-neutral3 font-normal">({count})</span>}
+                      {t('scorers.title')}{count > 0 && <span className="text-neutral3 font-normal">({count})</span>}
                     </SectionTitle>
                   </CollapsibleTrigger>
                 </div>
@@ -102,9 +104,9 @@ export function ScorersSection({ control, error, readOnly = false }: ScorersSect
                         options={options}
                         value={selectedIds}
                         onValueChange={handleValueChange}
-                        placeholder="Select scorers..."
-                        searchPlaceholder="Search scorers..."
-                        emptyText="No scorers available"
+                        placeholder={t('scorers.selectPlaceholder')}
+                        searchPlaceholder={t('scorers.searchPlaceholder')}
+                        emptyText={t('scorers.emptyText')}
                         disabled={isLoading || readOnly}
                         error={error}
                       />
@@ -159,6 +161,7 @@ function ScorerConfigPanel({
   onRemove,
   readOnly = false,
 }: ScorerConfigPanelProps) {
+  const { t } = useTranslation('agents');
   const samplingType = samplingConfig?.type || 'none';
 
   const handleTypeChange = (type: string) => {
@@ -185,7 +188,7 @@ function ScorerConfigPanel({
           <span className="text-xs font-medium text-neutral6">{scorerName}</span>
         </div>
         {!readOnly && (
-          <Button type="button" tooltip={`Remove ${scorerName}`} onClick={onRemove} variant="ghost" size="icon-sm">
+          <Button type="button" tooltip={t('scorers.removeTooltip', { name: scorerName })} onClick={onRemove} variant="ghost" size="icon-sm">
             <Trash2 />
           </Button>
         )}
@@ -195,7 +198,7 @@ function ScorerConfigPanel({
         id={`description-${scorerId}`}
         value={description}
         onChange={e => onDescriptionChange(e.target.value)}
-        placeholder="Custom description for this scorer..."
+        placeholder={t('scorers.descriptionPlaceholder')}
         className="min-h-[40px] text-xs bg-surface3 border-dashed px-2 py-1"
         size="sm"
         disabled={readOnly}
@@ -203,7 +206,7 @@ function ScorerConfigPanel({
 
       <div className="flex flex-col gap-2">
         <Label htmlFor={`sampling-type-${scorerId}`} className="text-xs text-neutral4">
-          Sampling
+          {t('scorers.sampling')}
         </Label>
         <RadioGroup
           id={`sampling-type-${scorerId}`}
@@ -215,13 +218,13 @@ function ScorerConfigPanel({
           <div className="flex items-center gap-2">
             <RadioGroupItem value="none" id={`${scorerId}-none`} disabled={readOnly} />
             <Label htmlFor={`${scorerId}-none`} className="text-sm text-neutral5 cursor-pointer">
-              None (evaluate all)
+              {t('scorers.samplingNone')}
             </Label>
           </div>
           <div className="flex items-center gap-2">
             <RadioGroupItem value="ratio" id={`${scorerId}-ratio`} disabled={readOnly} />
             <Label htmlFor={`${scorerId}-ratio`} className="text-sm text-neutral5 cursor-pointer">
-              Ratio (percentage)
+              {t('scorers.samplingRatio')}
             </Label>
           </div>
         </RadioGroup>
@@ -229,7 +232,7 @@ function ScorerConfigPanel({
         {samplingType === 'ratio' && (
           <div className="flex flex-col gap-1.5 mt-1">
             <Label htmlFor={`rate-${scorerId}`} className="text-xs text-neutral4">
-              Sample Rate (0-1)
+              {t('scorers.sampleRate')}
             </Label>
             <Input
               id={`rate-${scorerId}`}

@@ -1,10 +1,12 @@
 import { ScrollArea } from '@mastra/playground-ui/components/ScrollArea';
 import { Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { useAgentEditFormContext } from '../../context/agent-edit-form-context';
 import { AgentCMSBlocks } from '../agent-cms-blocks';
 
 export function InstructionBlocksPage() {
+  const { t } = useTranslation('agents');
   const { form, readOnly } = useAgentEditFormContext();
 
   const schema = form.watch('variables');
@@ -20,7 +22,7 @@ export function InstructionBlocksPage() {
             <AgentCMSBlocks
               items={field.value ?? []}
               onChange={field.onChange}
-              placeholder="Enter content..."
+              placeholder={t('instructionBlocks.contentPlaceholder')}
               schema={schema}
               readOnly={readOnly}
             />

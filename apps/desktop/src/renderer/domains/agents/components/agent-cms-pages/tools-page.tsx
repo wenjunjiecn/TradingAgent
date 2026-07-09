@@ -10,6 +10,7 @@ import { cn } from '@mastra/playground-ui/utils/cn';
 import type { RuleGroup } from '@mastra/playground-ui/utils/rule-engine';
 import { PlusIcon, XIcon } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWatch } from 'react-hook-form';
 
 import { useAgentEditFormContext } from '../../context/agent-edit-form-context';
@@ -20,6 +21,7 @@ import { IntegrationToolsSection } from '@/domains/tool-providers/components';
 import { useTools } from '@/domains/tools/hooks/use-all-tools';
 
 export function ToolsPage() {
+  const { t } = useTranslation('agents');
   const { form, readOnly, isCodeAgentOverride, editorConfig } = useAgentEditFormContext();
   const { control } = form;
   const { data: tools } = useTools();
@@ -31,8 +33,6 @@ export function ToolsPage() {
   const isToolsLocked = isCodeAgentOverride && (editorConfig === false || toolsConfig === false);
   const canEditToolMembership = !readOnly && !descriptionsOnly && !isToolsLocked;
   const canEditToolDescriptions = !readOnly && !isToolsLocked && (!isCodeAgentOverride || toolsConfig !== false);
-  // MCP clients and integration tools are tool-membership additions, so they
-  // are hidden whenever tool membership cannot be edited (locked or descriptions-only).
   const hideToolMembershipSections = isToolsLocked || descriptionsOnly;
 
   const options = useMemo(() => {
@@ -102,14 +102,12 @@ export function ToolsPage() {
     (providerId: string, tools: Map<string, string>) => {
       const next = { ...selectedIntegrationTools };
 
-      // Remove all tools from this provider
       for (const key of Object.keys(next)) {
         if (key.startsWith(`${providerId}:`)) {
           delete next[key];
         }
       }
 
-      // Add selected tools, preserving existing config (rules) if available
       for (const [id, description] of tools) {
         next[id] = selectedIntegrationTools?.[id] || { description };
       }
@@ -120,9 +118,6 @@ export function ToolsPage() {
   );
 
   const selectedOptions = useMemo(() => {
-    // Include all selected tools, even agent-level tools not in the global list.
-    // Tools registered on the agent (not at the Mastra instance level) won't
-    // appear in useTools() but are still valid selections in the stored config.
     return selectedToolIds.map(id => {
       const existing = options.find(opt => opt.value === id);
       return existing || { value: id, label: id, description: selectedTools?.[id]?.description || '' };
@@ -152,7 +147,7 @@ export function ToolsPage() {
           <EntityDescription>
             <input
               type="text"
-              aria-label={`Description for ${tool.label}`}
+              aria-label={t('tools.title')}
               disabled={!canEditToolDescriptions}
               className={cn(
                 'border border-transparent appearance-none block w-full text-neutral3 bg-transparent rounded px-1 -mx-1 transition-colors focus:outline-solid focus:outline-1 focus:outline-white focus-visible:outline-solid focus-visible:outline-1 focus-visible:outline-white',
@@ -178,7 +173,7 @@ export function ToolsPage() {
             type="button"
             onClick={() => handleValueChange(tool.value)}
             className="text-neutral3 hover:text-neutral5 transition-colors rounded-sm focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-white/30"
-            aria-label={`Remove ${tool.label}`}
+            aria-label={t('scorers.removeTooltip', { name: tool.label })}
           >
             <Icon size="sm">
               <XIcon />
@@ -193,24 +188,22 @@ export function ToolsPage() {
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-6 pt-4">
         {isToolsLocked && (
-          <Notice variant="info" title="Tools are owned by code">
+          <Notice variant="info" title={t('tools.lockedTitle')}>
             <Notice.Message>
-              This code-defined agent has disabled tools editing from Studio. Update the agent definition in code to
-              change its tools.
+              {t('tools.lockedDesc')}
             </Notice.Message>
           </Notice>
         )}
         {!isToolsLocked && descriptionsOnly && (
-          <Notice variant="info" title="Tool membership is owned by code">
+          <Notice variant="info" title={t('tools.descriptionsOnlyTitle')}>
             <Notice.Message>
-              This code-defined agent only allows editing tool descriptions from Studio. Update the agent definition in
-              code to add or remove tools.
+              {t('tools.descriptionsOnlyDesc')}
             </Notice.Message>
           </Notice>
         )}
         <SubSectionRoot>
           <Section.Header>
-            <SubSectionHeader title="Tools" icon={<ToolsIcon />} />
+            <SubSectionHeader title={t('tools.title')} icon={<ToolsIcon />} />
 
             {canEditToolMembership && unselectedOptions.length > 0 && (
               <Popover>
@@ -219,7 +212,7 @@ export function ToolsPage() {
                     <Icon size="sm">
                       <PlusIcon />
                     </Icon>
-                    Add Tools
+                    {t('tools.addTools')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-80 p-0 pt-4 max-h-72 overflow-y-auto">

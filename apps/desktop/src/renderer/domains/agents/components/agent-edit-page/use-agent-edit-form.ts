@@ -1,5 +1,6 @@
 import type { Resolver } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import type { AgentFormValues } from './utils/form-validation';
 import { createInstructionBlock } from './utils/form-validation';
@@ -7,19 +8,20 @@ import { createInstructionBlock } from './utils/form-validation';
 // Simple validation resolver without zod to avoid version conflicts
 function createAgentFormResolver({
   isCodeAgentOverride,
-}: { isCodeAgentOverride?: boolean } = {}): Resolver<AgentFormValues> {
+  t,
+}: { isCodeAgentOverride?: boolean; t: (key: string) => string } = {}): Resolver<AgentFormValues> {
   return async values => {
     const errors: Record<string, { type: string; message: string }> = {};
 
     if (!isCodeAgentOverride) {
       if (!values.name || values.name.trim() === '') {
-        errors.name = { type: 'required', message: 'Name is required' };
+        errors.name = { type: 'required', message: t('validation.nameRequired') };
       } else if (values.name.length > 100) {
-        errors.name = { type: 'maxLength', message: 'Name must be 100 characters or less' };
+        errors.name = { type: 'maxLength', message: t('validation.nameMaxLength') };
       }
 
       if (values.description && values.description.length > 500) {
-        errors.description = { type: 'maxLength', message: 'Description must be 500 characters or less' };
+        errors.description = { type: 'maxLength', message: t('validation.descriptionMaxLength') };
       }
     }
 
@@ -38,17 +40,17 @@ function createAgentFormResolver({
       const hasPlainInstructions = values.instructions && values.instructions.trim() !== '';
 
       if (!hasBlockContent && !hasPlainInstructions) {
-        errors.instructions = { type: 'required', message: 'Instructions are required' };
+        errors.instructions = { type: 'required', message: t('validation.instructionsRequired') };
       }
     }
 
     if (!isCodeAgentOverride) {
       if (!values.model?.provider || values.model.provider.trim() === '') {
-        errors['model.provider'] = { type: 'required', message: 'Provider is required' };
+        errors['model.provider'] = { type: 'required', message: t('validation.providerRequired') };
       }
 
       if (!values.model?.name || values.model.name.trim() === '') {
-        errors['model.name'] = { type: 'required', message: 'Model is required' };
+        errors['model.name'] = { type: 'required', message: t('validation.modelRequired') };
       }
     }
 
@@ -66,9 +68,10 @@ export interface UseAgentEditFormOptions {
 
 export function useAgentEditForm(options: UseAgentEditFormOptions = {}) {
   const { initialValues, isCodeAgentOverride } = options;
+  const { t } = useTranslation('agents');
 
   const form = useForm<AgentFormValues>({
-    resolver: createAgentFormResolver({ isCodeAgentOverride }),
+    resolver: createAgentFormResolver({ isCodeAgentOverride, t }),
     defaultValues: {
       name: initialValues?.name ?? '',
       description: initialValues?.description ?? '',

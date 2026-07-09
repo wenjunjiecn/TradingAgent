@@ -5,6 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { Control } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import type { AgentFormValues, EntityConfig } from '../utils/form-validation';
 import { EntityAccordionItem } from '@/domains/cms';
@@ -18,6 +19,7 @@ interface ToolsSectionProps {
 }
 
 export function ToolsSection({ control, error, readOnly = false }: ToolsSectionProps) {
+  const { t } = useTranslation('agents');
   const [isOpen, setIsOpen] = useState(false);
   const { data: tools, isLoading } = useTools();
   const selectedTools = useWatch({ control, name: 'tools' });
@@ -43,7 +45,7 @@ export function ToolsSection({ control, error, readOnly = false }: ToolsSectionP
         <CollapsibleTrigger className="flex items-center gap-1 w-full p-3 bg-surface3">
           <ChevronRight className="h-4 w-4 text-neutral3" />
           <SectionTitle icon={<ToolsIcon className="text-accent6" />}>
-            Tools{count > 0 && <span className="text-neutral3 font-normal">({count})</span>}
+            {t('tools.title')}{count > 0 && <span className="text-neutral3 font-normal">({count})</span>}
           </SectionTitle>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -88,9 +90,9 @@ export function ToolsSection({ control, error, readOnly = false }: ToolsSectionP
                       options={options}
                       value={selectedIds}
                       onValueChange={handleValueChange}
-                      placeholder="Select tools..."
-                      searchPlaceholder="Search tools..."
-                      emptyText="No tools available"
+                      placeholder={t('tools.selectPlaceholder')}
+                      searchPlaceholder={t('tools.searchPlaceholder')}
+                      emptyText={t('tools.emptyText')}
                       disabled={isLoading || readOnly}
                       error={error}
                     />

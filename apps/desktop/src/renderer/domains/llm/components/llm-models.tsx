@@ -2,6 +2,7 @@ import { Combobox } from '@mastra/playground-ui/components/Combobox';
 import type { ComboboxOption, ComboboxProps } from '@mastra/playground-ui/components/Combobox';
 import { Skeleton } from '@mastra/playground-ui/components/Skeleton';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAllModels, useFilteredModels } from '../hooks/use-filtered-models';
 import { useLLMProviders } from '../hooks/use-llm-providers';
 import { useBuilderFilteredModels, useBuilderModelPolicy } from '@/domains/agent-builder';
@@ -31,6 +32,7 @@ export const LLMModels = ({
   container,
   disabled,
 }: LLMModelsProps) => {
+  const { t } = useTranslation('agents');
   const { data: dataProviders, isLoading: providersLoading } = useLLMProviders();
   const providers = dataProviders?.providers || [];
 
@@ -59,9 +61,9 @@ export const LLMModels = ({
       options={modelOptions}
       value={value}
       onValueChange={onValueChange}
-      placeholder="Select model..."
-      searchPlaceholder="Search models..."
-      emptyText="No models found"
+      placeholder={t('llm.selectModel')}
+      searchPlaceholder={t('llm.searchModels')}
+      emptyText={t('llm.noModels')}
       variant={variant}
       className={className}
       open={open}

@@ -10,6 +10,7 @@ import { JudgeIcon } from '@mastra/playground-ui/icons/JudgeIcon';
 import { cn } from '@mastra/playground-ui/utils/cn';
 import type { RuleGroup } from '@mastra/playground-ui/utils/rule-engine';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWatch } from 'react-hook-form';
 
 import type { ScorerConfig } from '../../components/agent-edit-page/utils/form-validation';
@@ -19,6 +20,7 @@ import { SubSectionHeader } from '@/domains/cms/components/section/section-heade
 import { useScorers } from '@/domains/scores/hooks/use-scorers';
 
 export function ScorersPage() {
+  const { t } = useTranslation('agents');
   const { form, readOnly } = useAgentEditFormContext();
   const { control } = form;
   const { data: scorers } = useScorers();
@@ -103,17 +105,17 @@ export function ScorersPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <SectionHeader
-            title="Scorers"
-            subtitle={`Configure scorers for evaluating agent responses.${count > 0 ? ` (${count} selected)` : ''}`}
+            title={t('scorers.title')}
+            subtitle={`${t('scorers.subtitle')}${count > 0 ? ` ${t('scorers.selectedSuffix', { count })}` : ''}`}
           />
         </div>
 
         <SubSectionRoot>
           <Section.Header>
-            <SubSectionHeader title="Available Scorers" icon={<JudgeIcon />} />
+            <SubSectionHeader title={t('scorers.available')} icon={<JudgeIcon />} />
           </Section.Header>
 
-          <Searchbar onSearch={setSearch} label="Search scorers" placeholder="Search scorers" />
+          <Searchbar onSearch={setSearch} label={t('scorers.search')} placeholder={t('scorers.search')} />
 
           {filteredOptions.length > 0 && (
             <div className="flex flex-col gap-1">
@@ -187,6 +189,7 @@ interface ScorerConfigPanelProps {
 }
 
 function ScorerConfigPanel({ scorerId, samplingConfig, onSamplingChange, readOnly = false }: ScorerConfigPanelProps) {
+  const { t } = useTranslation('agents');
   const samplingType = samplingConfig?.type || 'none';
 
   const handleTypeChange = (type: string) => {
@@ -207,7 +210,7 @@ function ScorerConfigPanel({ scorerId, samplingConfig, onSamplingChange, readOnl
     <div>
       <div className="flex flex-col gap-2">
         <Label htmlFor={`sampling-type-${scorerId}`} className="text-xs text-neutral4">
-          Sampling
+          {t('scorers.sampling')}
         </Label>
         <RadioGroup
           id={`sampling-type-${scorerId}`}
@@ -219,13 +222,13 @@ function ScorerConfigPanel({ scorerId, samplingConfig, onSamplingChange, readOnl
           <div className="flex items-center gap-2">
             <RadioGroupItem value="none" id={`${scorerId}-none`} disabled={readOnly} />
             <Label htmlFor={`${scorerId}-none`} className="text-ui-xs text-neutral5 cursor-pointer">
-              None (evaluate all)
+              {t('scorers.samplingNone')}
             </Label>
           </div>
           <div className="flex items-center gap-2">
             <RadioGroupItem value="ratio" id={`${scorerId}-ratio`} disabled={readOnly} />
             <Label htmlFor={`${scorerId}-ratio`} className="text-ui-xs text-neutral5 cursor-pointer">
-              Ratio (percentage)
+              {t('scorers.samplingRatio')}
             </Label>
           </div>
         </RadioGroup>
@@ -233,7 +236,7 @@ function ScorerConfigPanel({ scorerId, samplingConfig, onSamplingChange, readOnl
         {samplingType === 'ratio' && (
           <div className="flex flex-col gap-1.5 mt-2">
             <Label htmlFor={`rate-${scorerId}`} className="text-xs text-neutral4">
-              Sample Rate (0-1)
+              {t('scorers.sampleRate')}
             </Label>
             <Input
               id={`rate-${scorerId}`}

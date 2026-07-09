@@ -7,6 +7,7 @@ import { Searchbar } from '@mastra/playground-ui/components/Searchbar';
 import { Switch } from '@mastra/playground-ui/components/Switch';
 import { Plus, Drill } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWatch } from 'react-hook-form';
 
 import { useAgentEditFormContext } from '../../context/agent-edit-form-context';
@@ -15,6 +16,7 @@ import { SkillEditDialog } from './skill-edit-dialog';
 import { SectionHeader } from '@/domains/cms';
 
 export function SkillsPage() {
+  const { t } = useTranslation('agents');
   const { form, readOnly } = useAgentEditFormContext();
   const { control } = form;
   const { data: storedSkillsResponse, isLoading } = useStoredSkills();
@@ -65,19 +67,19 @@ export function SkillsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <SectionHeader
-            title="Skills"
-            subtitle={`Give your agent specialized knowledge by using skills.${totalCount > 0 ? ` (${totalCount} selected)` : ''}`}
+            title={t('skills.title')}
+            subtitle={`${t('skills.subtitle')}${totalCount > 0 ? ` ${t('skills.selectedSuffix', { count: totalCount })}` : ''}`}
           />
 
           {!readOnly && (
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="size-3" />
-              Add a skill
+              {t('skills.addSkill')}
             </Button>
           )}
         </div>
 
-        <Searchbar onSearch={setSearch} label="Search skills" placeholder="Search skills" />
+        <Searchbar onSearch={setSearch} label={t('skills.search')} placeholder={t('skills.search')} />
 
         {filteredSkills.length > 0 && (
           <div className="flex flex-col gap-2">
@@ -85,7 +87,7 @@ export function SkillsPage() {
               <Entity key={skill.id} className="bg-surface2">
                 <EntityContent>
                   <EntityName>{skill.name}</EntityName>
-                  <EntityDescription>{skill.description || 'No description'}</EntityDescription>
+                  <EntityDescription>{skill.description || t('skills.noDescription')}</EntityDescription>
                 </EntityContent>
 
                 {!readOnly && (
@@ -103,13 +105,13 @@ export function SkillsPage() {
           <div className="py-12">
             <EmptyState
               iconSlot={<Drill height={40} width={40} />}
-              titleSlot="No skills available"
-              descriptionSlot="Create a skill to give your agent specialized knowledge."
+              titleSlot={t('skills.emptyTitle')}
+              descriptionSlot={t('skills.emptyDesc')}
               actionSlot={
                 !readOnly ? (
                   <Button onClick={() => setDialogOpen(true)}>
                     <Plus />
-                    Add a skill
+                    {t('skills.addSkill')}
                   </Button>
                 ) : undefined
               }

@@ -15,6 +15,7 @@ import type { JsonSchema } from '@mastra/playground-ui/utils/json-schema';
 import { Check, PlusIcon } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Controller, useWatch } from 'react-hook-form';
 import type { UseFormReturn } from 'react-hook-form';
 
@@ -27,10 +28,12 @@ function RecursiveFieldRenderer({
   field,
   parentPath,
   depth,
+  t,
 }: {
   field: SchemaField;
   parentPath: string[];
   depth: number;
+  t: (key: string) => string;
 }) {
   return (
     <div className="py-2 border-border1 border-l-4 border-b">
@@ -39,12 +42,12 @@ function RecursiveFieldRenderer({
           <div className="flex flex-row gap-2 items-center">
             <JSONSchemaForm.FieldName
               labelIsHidden
-              placeholder="Variable name"
+              placeholder={t('variables.variableNamePlaceholder')}
               size="md"
               className="[&_input]:bg-surface3 w-full"
             />
 
-            <JSONSchemaForm.FieldType placeholder="Type" size="md" className="[&_button]:bg-surface3 w-full" />
+            <JSONSchemaForm.FieldType placeholder={t('variables.typePlaceholder')} size="md" className="[&_button]:bg-surface3 w-full" />
             <JSONSchemaForm.FieldRemove variant="default" className="shrink-0" />
           </div>
 
@@ -62,12 +65,13 @@ function RecursiveFieldRenderer({
                 field={nestedField}
                 parentPath={nestedContext.parentPath}
                 depth={nestedContext.depth}
+                t={t}
               />
             )}
           </JSONSchemaForm.FieldList>
           <JSONSchemaForm.AddField variant="ghost" size="sm" className="mt-2">
             <PlusIcon className="w-3 h-3 mr-1" />
-            Add nested variable
+            {t('variables.addNestedVariable')}
           </JSONSchemaForm.AddField>
         </JSONSchemaForm.NestedFields>
       </JSONSchemaForm.Field>
@@ -94,6 +98,7 @@ export function AgentEditSidebar({
   mode = 'create',
   readOnly = false,
 }: AgentEditSidebarProps) {
+  const { t } = useTranslation('agents');
   const {
     register,
     control,
@@ -119,36 +124,36 @@ export function AgentEditSidebar({
             <Icon size="sm">
               <AgentIcon />
             </Icon>
-            Identity
+            {t('tabs.identity')}
           </Tab>
           <Tab value="capabilities">
             <Icon size="sm">
               <ToolsIcon />
             </Icon>
-            Capabilities
+            {t('tabs.capabilities')}
           </Tab>
 
           <Tab value="variables">
             <Icon size="sm">
               <VariablesIcon />
             </Icon>
-            Variables
+            {t('tabs.variables')}
           </Tab>
         </TabList>
 
         <TabContent value="identity" className="flex-1 min-h-0 py-0 pb-3">
           <ScrollArea className="h-full">
             <div className="flex flex-col gap-6 p-4">
-              <SectionHeader title="Identity" subtitle="Define your agent's name, description, and model." />
+              <SectionHeader title={t('identity.title')} subtitle={t('identity.subtitle')} />
 
               {/* Agent Name */}
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="agent-name" className="text-xs text-icon5">
-                  Name <span className="text-accent2">*</span>
+                  {t('identity.name')} <span className="text-accent2">*</span>
                 </Label>
                 <Input
                   id="agent-name"
-                  placeholder="My Agent"
+                  placeholder={t('identity.namePlaceholder')}
                   className="bg-surface3"
                   {...register('name')}
                   error={!!errors.name}
@@ -160,11 +165,11 @@ export function AgentEditSidebar({
               {/* Description */}
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="agent-description" className="text-xs text-icon5">
-                  Description
+                  {t('identity.description')}
                 </Label>
                 <Textarea
                   id="agent-description"
-                  placeholder="Describe what this agent does"
+                  placeholder={t('identity.descriptionPlaceholder')}
                   className="bg-surface3"
                   {...register('description')}
                   error={!!errors.description}
@@ -176,7 +181,7 @@ export function AgentEditSidebar({
               {/* Provider */}
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs text-icon5">
-                  Provider <span className="text-accent2">*</span>
+                  {t('identity.provider')} <span className="text-accent2">*</span>
                 </Label>
                 <Controller
                   name="model.provider"
@@ -195,7 +200,7 @@ export function AgentEditSidebar({
               {/* Model */}
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs text-icon5">
-                  Model <span className="text-accent2">*</span>
+                  {t('identity.model')} <span className="text-accent2">*</span>
                 </Label>
                 <Controller
                   name="model.name"
@@ -221,8 +226,8 @@ export function AgentEditSidebar({
           <ScrollArea className="h-full">
             <div className="flex flex-col gap-6 p-4">
               <SectionHeader
-                title="Capabilities"
-                subtitle="Extend your agent with tools, workflows, and other resources to enhance its abilities."
+                title={t('capabilities.title')}
+                subtitle={t('capabilities.subtitle')}
               />
 
               <ToolsSection control={control} error={errors.tools?.root?.message} readOnly={readOnly} />
@@ -243,12 +248,12 @@ export function AgentEditSidebar({
           <ScrollArea className="h-full">
             <div className="flex flex-col gap-6 p-4 border-b border-border1">
               <SectionHeader
-                title="Variables"
+                title={t('variables.title')}
                 subtitle={
                   <>
-                    Variables are dynamic values that change based on the context of each request. Use them in your
-                    agent's instructions with the{' '}
-                    <code className="text-[#F59E0B] font-medium">{'{{variableName}}'}</code> syntax.
+                    {t('variables.subtitlePrefix')}{' '}
+                    <code className="text-[#F59E0B] font-medium">{'{{variableName}}'}</code>{' '}
+                    {t('variables.subtitleSuffix')}
                   </>
                 }
               />
@@ -258,14 +263,14 @@ export function AgentEditSidebar({
               <JSONSchemaForm.Root onChange={handleVariablesChange} defaultValue={initialFields} maxDepth={5}>
                 <JSONSchemaForm.FieldList>
                   {(field, _index, { parentPath, depth }) => (
-                    <RecursiveFieldRenderer key={field.id} field={field} parentPath={parentPath} depth={depth} />
+                    <RecursiveFieldRenderer key={field.id} field={field} parentPath={parentPath} depth={depth} t={t} />
                   )}
                 </JSONSchemaForm.FieldList>
 
                 <div className="p-2">
                   <JSONSchemaForm.AddField variant="outline" size="sm">
                     <PlusIcon className="w-4 h-4 mr-2" />
-                    Add variable
+                    {t('variables.addVariable')}
                   </JSONSchemaForm.AddField>
                 </div>
               </JSONSchemaForm.Root>
@@ -281,14 +286,14 @@ export function AgentEditSidebar({
             {isSubmitting ? (
               <>
                 <Spinner className="h-4 w-4" />
-                {mode === 'edit' ? 'Updating...' : 'Creating...'}
+                {mode === 'edit' ? t('actions.updating') : t('actions.creating')}
               </>
             ) : (
               <>
                 <Icon>
                   <Check />
                 </Icon>
-                {mode === 'edit' ? 'Update agent' : 'Create agent'}
+                {mode === 'edit' ? t('actions.updateAgent') : t('actions.createAgent')}
               </>
             )}
           </Button>

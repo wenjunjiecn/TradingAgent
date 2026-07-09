@@ -5,6 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { Control } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { useAgents } from '../../../hooks/use-agents';
 import type { AgentFormValues, EntityConfig } from '../utils/form-validation';
@@ -19,6 +20,7 @@ interface AgentsSectionProps {
 }
 
 export function AgentsSection({ control, error, currentAgentId, readOnly = false }: AgentsSectionProps) {
+  const { t } = useTranslation('agents');
   const [isOpen, setIsOpen] = useState(false);
   const { data: agents, isLoading } = useAgents();
   const selectedAgents = useWatch({ control, name: 'agents' });
@@ -87,7 +89,7 @@ export function AgentsSection({ control, error, currentAgentId, readOnly = false
                   <CollapsibleTrigger className="flex items-center gap-1 w-full">
                     <ChevronRight className="h-4 w-4 text-neutral3" />
                     <SectionTitle icon={<AgentIcon className="text-accent1" />}>
-                      Sub-Agents{count > 0 && <span className="text-neutral3 font-normal">({count})</span>}
+                      {t('subAgents.title')}{count > 0 && <span className="text-neutral3 font-normal">({count})</span>}
                     </SectionTitle>
                   </CollapsibleTrigger>
                 </div>
@@ -100,9 +102,9 @@ export function AgentsSection({ control, error, currentAgentId, readOnly = false
                         options={options}
                         value={selectedIds}
                         onValueChange={handleValueChange}
-                        placeholder="Select sub-agents..."
-                        searchPlaceholder="Search agents..."
-                        emptyText="No agents available"
+                        placeholder={t('subAgents.selectPlaceholder')}
+                        searchPlaceholder={t('subAgents.searchPlaceholder')}
+                        emptyText={t('subAgents.emptyText')}
                         disabled={isLoading || readOnly}
                         error={error}
                       />

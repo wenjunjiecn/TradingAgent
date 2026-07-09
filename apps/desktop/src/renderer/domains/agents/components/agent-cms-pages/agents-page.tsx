@@ -7,6 +7,7 @@ import { AgentIcon } from '@mastra/playground-ui/icons/AgentIcon';
 import { cn } from '@mastra/playground-ui/utils/cn';
 import type { RuleGroup } from '@mastra/playground-ui/utils/rule-engine';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWatch } from 'react-hook-form';
 
 import { useAgentEditFormContext } from '../../context/agent-edit-form-context';
@@ -15,6 +16,7 @@ import { SectionHeader, DisplayConditionsDialog } from '@/domains/cms';
 import { SubSectionHeader } from '@/domains/cms/components/section/section-header';
 
 export function AgentsPage() {
+  const { t } = useTranslation('agents');
   const { form, readOnly, agentId: currentAgentId } = useAgentEditFormContext();
   const { control } = form;
   const { data: agents } = useAgents();
@@ -97,17 +99,17 @@ export function AgentsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <SectionHeader
-            title="Sub-Agents"
-            subtitle={`Select sub-agents for this agent to delegate to.${count > 0 ? ` (${count} selected)` : ''}`}
+            title={t('subAgents.title')}
+            subtitle={`${t('subAgents.subtitle')}${count > 0 ? ` ${t('subAgents.selectedSuffix', { count })}` : ''}`}
           />
         </div>
 
         <SubSectionRoot>
           <Section.Header>
-            <SubSectionHeader title="Available Agents" icon={<AgentIcon />} />
+            <SubSectionHeader title={t('subAgents.available')} icon={<AgentIcon />} />
           </Section.Header>
 
-          <Searchbar onSearch={setSearch} label="Search agents" placeholder="Search agents" />
+          <Searchbar onSearch={setSearch} label={t('subAgents.search')} placeholder={t('subAgents.search')} />
 
           {filteredOptions.length > 0 && (
             <div className="flex flex-col gap-1">

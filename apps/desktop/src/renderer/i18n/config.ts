@@ -22,6 +22,8 @@ import zhCNTools from './locales/zh-CN/tools.json';
 import enTools from './locales/en/tools.json';
 import zhCNSkills from './locales/zh-CN/skills.json';
 import enSkills from './locales/en/skills.json';
+import zhCNAgents from './locales/zh-CN/agents.json';
+import enAgents from './locales/en/agents.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'zh-CN', label: '中文', flag: '🇨🇳' },
@@ -42,6 +44,7 @@ const resources = {
     settings: zhCNSettings,
     tools: zhCNTools,
     skills: zhCNSkills,
+    agents: zhCNAgents,
   },
   en: {
     common: enCommon,
@@ -54,6 +57,7 @@ const resources = {
     settings: enSettings,
     tools: enTools,
     skills: enSkills,
+    agents: enAgents,
   },
 } as const;
 
@@ -64,7 +68,7 @@ i18n
     resources,
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: ['zh-CN', 'en'],
-    ns: ['common', 'nav', 'dashboard', 'collaboration', 'reports', 'teams', 'market', 'settings', 'tools', 'skills'],
+    ns: ['common', 'nav', 'dashboard', 'collaboration', 'reports', 'teams', 'market', 'settings', 'tools', 'skills', 'agents'],
     defaultNS: 'common',
     interpolation: {
       escapeValue: false,

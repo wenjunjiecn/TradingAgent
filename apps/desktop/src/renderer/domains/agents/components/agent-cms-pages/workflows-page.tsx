@@ -7,6 +7,7 @@ import { WorkflowIcon } from '@mastra/playground-ui/icons/WorkflowIcon';
 import { cn } from '@mastra/playground-ui/utils/cn';
 import type { RuleGroup } from '@mastra/playground-ui/utils/rule-engine';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useWatch } from 'react-hook-form';
 
 import { useAgentEditFormContext } from '../../context/agent-edit-form-context';
@@ -15,6 +16,7 @@ import { SubSectionHeader } from '@/domains/cms/components/section/section-heade
 import { useWorkflows } from '@/domains/workflows/hooks/use-workflows';
 
 export function WorkflowsPage() {
+  const { t } = useTranslation('agents');
   const { form, readOnly } = useAgentEditFormContext();
   const { control } = form;
   const { data: workflows } = useWorkflows();
@@ -87,16 +89,16 @@ export function WorkflowsPage() {
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-6">
         <SectionHeader
-          title="Workflows"
-          subtitle={`Select workflows this agent can trigger.${count > 0 ? ` (${count} selected)` : ''}`}
+          title={t('workflows.title')}
+          subtitle={`${t('workflows.subtitle')}${count > 0 ? ` ${t('workflows.selectedSuffix', { count })}` : ''}`}
         />
 
         <SubSectionRoot>
           <Section.Header>
-            <SubSectionHeader title="Available Workflows" icon={<WorkflowIcon />} />
+            <SubSectionHeader title={t('workflows.available')} icon={<WorkflowIcon />} />
           </Section.Header>
 
-          <Searchbar onSearch={setSearch} label="Search workflows" placeholder="Search workflows" />
+          <Searchbar onSearch={setSearch} label={t('workflows.search')} placeholder={t('workflows.search')} />
 
           {filteredOptions.length > 0 && (
             <div className="flex flex-col gap-1">
