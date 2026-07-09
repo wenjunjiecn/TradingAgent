@@ -11,6 +11,7 @@ import type { AgentFormValues, EntityConfig } from '../utils/form-validation';
 import { EntityAccordionItem } from '@/domains/cms';
 import { SectionTitle } from '@/domains/cms/components/section/section-title';
 import { useTools } from '@/domains/tools/hooks/use-all-tools';
+import { useToolConfigs } from '@/lib/tool-api';
 
 interface ToolsSectionProps {
   control: Control<AgentFormValues>;
@@ -22,17 +23,34 @@ export function ToolsSection({ control, error, readOnly = false }: ToolsSectionP
   const { t } = useTranslation('agents');
   const [isOpen, setIsOpen] = useState(false);
   const { data: tools, isLoading } = useTools();
+  const { data: toolConfigsData } = useToolConfigs();
   const selectedTools = useWatch({ control, name: 'tools' });
   const count = Object.keys(selectedTools || {}).length;
 
+  // 构建 tool ID → enabled 的映射
+  const toolEnabledMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (toolConfigsData?.tools) {
+      for (const tc of toolConfigsData.tools) {
+        map.set(tc.id, tc.enabled);
+      }
+    }
+    return map;
+  }, [toolConfigsData]);
+
   const options = useMemo(() => {
     if (!tools) return [];
-    return Object.entries(tools).map(([id, tool]) => ({
-      value: id,
-      label: (tool as { name?: string }).name || id,
-      description: (tool as { description?: string }).description || '',
-    }));
-  }, [tools]);
+    return Object.entries(tools).map(([id, tool]) => {
+      const enabled = toolEnabledMap.get(id) ?? true;
+      const toolName = (tool as { name?: string }).name || id;
+      const toolDesc = (tool as { description?: string }).description || '';
+      return {
+        value: id,
+        label: enabled ? toolName : `${toolName} (已禁用)`,
+        description: enabled ? toolDesc : `${toolDesc} [已禁用]`,
+      };
+    });
+  }, [tools, toolEnabledMap]);
 
   const getOriginalDescription = (id: string): string => {
     const option = options.find(opt => opt.value === id);

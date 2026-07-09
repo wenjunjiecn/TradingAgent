@@ -51,6 +51,10 @@
     "saved": "保存成功",
     "saveFailed": "保存失败: {{error}}",
     "invalidJson": "JSON 格式无效",
-    "builtinNotDeletable": "内置工具不可删除"
+    "builtinNotDeletable": "内置工具不可删除",
+    "metadataOnlyHint": "自定义工具仅保存元数据配置（名称、描述、分类）。工具的实际执行逻辑需要在后端代码中实现并注册到 toolRegistry 后才能被 Agent 调用。",
+    "metadataOnlyBadge": "仅元数据",
+    "builtinReadOnlyFields": "内置工具的 Schema 和描述由代码定义，修改仅供参考，不会影响工具实际行为。",
+    "builtinFieldsLocked": "内置工具的 Schema 由代码定义，此处不可编辑"
   }
 }

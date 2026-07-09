@@ -1,5 +1,9 @@
 import type { ApiRoute } from '@mastra/core/server';
 import {
+  CreateToolConfigInputSchema,
+  ToolConfigSchema,
+} from '@trading-agent/shared';
+import {
   listToolConfigs,
   getToolConfig,
   createToolConfig,
@@ -44,10 +48,22 @@ const createToolRoute: ApiRoute = {
   handler: async (c: any) => {
     try {
       const body = await c.req.json();
-      const tool = await createToolConfig(body);
+      // Zod 校验输入
+      const parseResult = CreateToolConfigInputSchema.safeParse(body);
+      if (!parseResult.success) {
+        const errors = parseResult.error.issues
+          .map(i => `${i.path.join('.')}: ${i.message}`)
+          .join('; ');
+        return c.json({ error: `Validation failed: ${errors}` }, 400);
+      }
+      const tool = await createToolConfig(parseResult.data);
       return c.json({ tool }, 201);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      // 区分重复 ID 错误
+      if (message.includes('already exists') || message.includes('UNIQUE constraint') || message.includes('PRIMARY KEY')) {
+        return c.json({ error: 'Tool ID already exists' }, 409);
+      }
       return c.json({ error: message }, 500);
     }
   },
@@ -60,7 +76,16 @@ const updateToolRoute: ApiRoute = {
     try {
       const id = c.req.param('id');
       const updates = await c.req.json();
-      const tool = await updateToolConfig(id, updates);
+      // Zod 校验更新字段（部分校验）
+      const partialSchema = ToolConfigSchema.partial();
+      const parseResult = partialSchema.safeParse(updates);
+      if (!parseResult.success) {
+        const errors = parseResult.error.issues
+          .map(i => `${i.path.join('.')}: ${i.message}`)
+          .join('; ');
+        return c.json({ error: `Validation failed: ${errors}` }, 400);
+      }
+      const tool = await updateToolConfig(id, parseResult.data);
       if (!tool) {
         return c.json({ error: 'Tool not found' }, 404);
       }

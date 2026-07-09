@@ -1,5 +1,5 @@
 import { Button } from '@mastra/playground-ui/components/Button';
-import { Loader2, Save, X } from 'lucide-react';
+import { Loader2, Save, X, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@mastra/playground-ui/utils/toast';
@@ -34,6 +34,8 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
   const isEditing = !!tool;
   const createTool = useCreateTool();
   const updateTool = useUpdateTool();
+
+  const isBuiltin = tool?.isBuiltin ?? false;
 
   // 表单状态
   const [id, setId] = useState('');
@@ -123,9 +125,12 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
             description: description.trim(),
             category,
             enabled,
-            inputSchema: parsedInputSchema,
-            outputSchema: parsedOutputSchema,
-            config: parsedConfig,
+            // 内置工具的 Schema 字段由代码定义，不发送更新
+            ...(isBuiltin ? {} : {
+              inputSchema: parsedInputSchema,
+              outputSchema: parsedOutputSchema,
+              config: parsedConfig,
+            }),
           },
         });
       } else {
@@ -185,6 +190,22 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
 
         {/* 表单内容 */}
         <div className="space-y-4 p-5">
+          {/* 新建工具时显示仅元数据提示 */}
+          {!isEditing && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-400">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              <span>{t('tools:edit.metadataOnlyHint')}</span>
+            </div>
+          )}
+
+          {/* 编辑内置工具时显示提示 */}
+          {isEditing && isBuiltin && (
+            <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 text-xs text-blue-400">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              <span>{t('tools:edit.builtinReadOnlyFields')}</span>
+            </div>
+          )}
+
           {/* ID + Name */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
@@ -284,11 +305,15 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
                 setJsonErrors(prev => ({ ...prev, inputSchema: false }));
               }}
               rows={4}
+              disabled={isBuiltin}
               placeholder={t('tools:edit.inputSchemaPlaceholder')}
-              className={jsonTextareaClass(jsonErrors.inputSchema)}
+              className={`${jsonTextareaClass(jsonErrors.inputSchema)} ${isBuiltin ? 'cursor-not-allowed opacity-60' : ''}`}
             />
             {jsonErrors.inputSchema && (
               <p className="mt-0.5 text-[10px] text-red-400">{t('tools:edit.invalidJson')}</p>
+            )}
+            {isBuiltin && (
+              <p className="mt-0.5 text-[10px] text-neutral4">{t('tools:edit.builtinFieldsLocked')}</p>
             )}
           </div>
 
@@ -304,11 +329,15 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
                 setJsonErrors(prev => ({ ...prev, outputSchema: false }));
               }}
               rows={4}
+              disabled={isBuiltin}
               placeholder={t('tools:edit.outputSchemaPlaceholder')}
-              className={jsonTextareaClass(jsonErrors.outputSchema)}
+              className={`${jsonTextareaClass(jsonErrors.outputSchema)} ${isBuiltin ? 'cursor-not-allowed opacity-60' : ''}`}
             />
             {jsonErrors.outputSchema && (
               <p className="mt-0.5 text-[10px] text-red-400">{t('tools:edit.invalidJson')}</p>
+            )}
+            {isBuiltin && (
+              <p className="mt-0.5 text-[10px] text-neutral4">{t('tools:edit.builtinFieldsLocked')}</p>
             )}
           </div>
 
@@ -324,11 +353,15 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
                 setJsonErrors(prev => ({ ...prev, config: false }));
               }}
               rows={3}
+              disabled={isBuiltin}
               placeholder={t('tools:edit.configPlaceholder')}
-              className={jsonTextareaClass(jsonErrors.config)}
+              className={`${jsonTextareaClass(jsonErrors.config)} ${isBuiltin ? 'cursor-not-allowed opacity-60' : ''}`}
             />
             {jsonErrors.config && (
               <p className="mt-0.5 text-[10px] text-red-400">{t('tools:edit.invalidJson')}</p>
+            )}
+            {isBuiltin && (
+              <p className="mt-0.5 text-[10px] text-neutral4">{t('tools:edit.builtinFieldsLocked')}</p>
             )}
           </div>
         </div>

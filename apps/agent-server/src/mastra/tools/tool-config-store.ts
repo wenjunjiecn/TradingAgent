@@ -28,6 +28,14 @@ async function ensureTable(): Promise<void> {
   `);
 }
 
+/** 内置工具友好显示名称映射 */
+const TOOL_DISPLAY_NAMES: Record<string, string> = {
+  'get-market-data': '行情数据获取',
+  'technical-analysis': '技术指标分析',
+  'news-sentiment': '新闻情绪分析',
+  'fundamentals': '基本面数据',
+};
+
 /** 从 toolRegistry 构建内置工具配置种子 */
 function buildBuiltinSeeds(): ToolConfig[] {
   const now = new Date().toISOString();
@@ -48,7 +56,7 @@ function buildBuiltinSeeds(): ToolConfig[] {
 
     return {
       id: tool.id,
-      name: tool.id,
+      name: TOOL_DISPLAY_NAMES[tool.id] ?? tool.id,
       description: tool.description ?? '',
       category: categoryMap[tool.id] ?? 'custom',
       enabled: true,
@@ -62,65 +70,100 @@ function buildBuiltinSeeds(): ToolConfig[] {
   });
 }
 
-/** 种子化：同步内置工具到 DB（新增的插入，已存在的更新描述） */
+/**
+ * 种子化：同步内置工具到 DB
+ *
+ * 新增的内置工具完整插入；已存在的仅同步 isBuiltin 标记，
+ * 不覆盖用户对 name/description/category/inputSchema/outputSchema 的编辑。
+ * JSON 损坏的记录用种子数据覆盖修复。
+ * 所有写操作通过 db.batch() 在单个事务中执行。
+ */
 async function seedBuiltinTools(): Promise<void> {
   const db = getDbClient();
   const seeds = buildBuiltinSeeds();
   const now = new Date().toISOString();
 
-  for (const seed of seeds) {
-    const existing = await db.execute({
-      sql: `SELECT id FROM ${TABLE_NAME} WHERE id = ?`,
-      args: [seed.id],
-    });
+  // 先读取所有已存在的内置工具配置
+  const seedIds = seeds.map(s => s.id);
+  const placeholders = seedIds.map(() => '?').join(',');
+  const existingResult = await db.execute({
+    sql: `SELECT id, config FROM ${TABLE_NAME} WHERE id IN (${placeholders})`,
+    args: seedIds,
+  });
 
-    if (existing.rows.length === 0) {
-      // 新增内置工具
-      await db.execute({
-        sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at) VALUES (?, ?, ?, ?)`,
-        args: [seed.id, JSON.stringify(seed), seed.createdAt, now],
-      });
-    } else {
-      // 更新内置工具的描述/schema（保留用户的 enabled 和 config 设置）
-      const existingConfig = await db.execute({
-        sql: `SELECT config FROM ${TABLE_NAME} WHERE id = ?`,
-        args: [seed.id],
-      });
-      if (existingConfig.rows.length > 0) {
-        try {
-          const old: ToolConfig = JSON.parse((existingConfig.rows[0] as any).config);
-          const updated: ToolConfig = {
-            ...old,
-            name: seed.name,
-            description: seed.description,
-            category: seed.category,
-            isBuiltin: true,
-            inputSchema: seed.inputSchema,
-            outputSchema: seed.outputSchema,
-            updatedAt: now,
-          };
-          await db.execute({
-            sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ? WHERE id = ?`,
-            args: [JSON.stringify(updated), now, seed.id],
-          });
-        } catch {
-          // 解析失败则跳过
-        }
-      }
+  const existingMap = new Map<string, ToolConfig | null>();
+  for (const row of existingResult.rows) {
+    const id = (row as any).id as string;
+    try {
+      existingMap.set(id, JSON.parse((row as any).config) as ToolConfig);
+    } catch {
+      existingMap.set(id, null); // JSON 损坏
     }
   }
 
-  console.log(`[ToolConfigStore] Synced ${seeds.length} builtin tools`);
+  // 收集所有写操作
+  const writeStatements: Array<{ sql: string; args: any[] }> = [];
+
+  for (const seed of seeds) {
+    const existing = existingMap.get(seed.id);
+
+    if (existing === undefined) {
+      // 新增内置工具 — 完整插入种子数据
+      writeStatements.push({
+        sql: `INSERT INTO ${TABLE_NAME} (id, config, created_at, updated_at) VALUES (?, ?, ?, ?)`,
+        args: [seed.id, JSON.stringify(seed), seed.createdAt, now],
+      });
+    } else if (existing === null) {
+      // JSON 损坏 — 用种子数据覆盖
+      console.warn(`[ToolConfigStore] Corrupt config for "${seed.id}", overwriting with seed`);
+      writeStatements.push({
+        sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ? WHERE id = ?`,
+        args: [JSON.stringify(seed), now, seed.id],
+      });
+    } else if (!existing.isBuiltin) {
+      // 仅当 isBuiltin 标记不一致时才更新
+      const updated: ToolConfig = {
+        ...existing,
+        isBuiltin: true,
+        updatedAt: now,
+      };
+      writeStatements.push({
+        sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ? WHERE id = ?`,
+        args: [JSON.stringify(updated), now, seed.id],
+      });
+    }
+    // else: 已存在且 isBuiltin 为 true — 不做任何操作
+  }
+
+  // 批量执行（libsql batch 自动包裹在事务中）
+  if (writeStatements.length > 0) {
+    await db.batch(writeStatements as never);
+  }
+
+  console.log(`[ToolConfigStore] Synced ${seeds.length} builtin tools (${writeStatements.length} writes)`);
 }
 
-let storeInitialized = false;
+let initPromise: Promise<void> | null = null;
 
-/** 初始化工具配置存储 */
+/** 初始化工具配置存储（并发安全：使用 Promise 缓存避免竞态） */
 export async function initToolConfigStore(): Promise<void> {
-  if (storeInitialized) return;
-  await ensureTable();
-  await seedBuiltinTools();
-  storeInitialized = true;
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    await ensureTable();
+    await seedBuiltinTools();
+  })();
+  return initPromise;
+}
+
+/** 安全解析工具配置 JSON，解析失败时返回 null */
+function safeParseToolConfig(raw: unknown): ToolConfig | null {
+  if (typeof raw !== 'string') return null;
+  try {
+    return JSON.parse(raw) as ToolConfig;
+  } catch {
+    console.error('[ToolConfigStore] Failed to parse tool config JSON');
+    return null;
+  }
 }
 
 /** 列出所有工具配置 */
@@ -128,7 +171,9 @@ export async function listToolConfigs(): Promise<ToolConfig[]> {
   await initToolConfigStore();
   const db = getDbClient();
   const result = await db.execute(`SELECT config FROM ${TABLE_NAME} ORDER BY created_at ASC`);
-  return result.rows.map(row => JSON.parse((row as any).config) as ToolConfig);
+  return result.rows
+    .map(row => safeParseToolConfig((row as any).config))
+    .filter((t): t is ToolConfig => t !== null);
 }
 
 /** 获取单个工具配置 */
@@ -140,7 +185,7 @@ export async function getToolConfig(id: string): Promise<ToolConfig | null> {
     args: [id],
   });
   if (result.rows.length === 0) return null;
-  return JSON.parse((result.rows[0] as any).config) as ToolConfig;
+  return safeParseToolConfig((result.rows[0] as any).config);
 }
 
 /** 创建新工具配置 */
@@ -149,6 +194,13 @@ export async function createToolConfig(
 ): Promise<ToolConfig> {
   await initToolConfigStore();
   const db = getDbClient();
+
+  // 检查 ID 是否已存在
+  const existing = await getToolConfig(input.id);
+  if (existing) {
+    throw new Error(`Tool ID "${input.id}" already exists`);
+  }
+
   const now = new Date().toISOString();
   const config: ToolConfig = {
     ...input,
@@ -191,6 +243,15 @@ export async function updateToolConfig(
   });
 
   return updated;
+}
+
+/**
+ * 获取所有已启用的工具 ID 集合。
+ * 用于 Agent 实例化时过滤掉被禁用的工具。
+ */
+export async function getEnabledToolIds(): Promise<Set<string>> {
+  const all = await listToolConfigs();
+  return new Set(all.filter(t => t.enabled).map(t => t.id));
 }
 
 /** 删除工具配置（内置工具不可删除） */

@@ -7,6 +7,7 @@ import {
   type AgentTemplate,
 } from '@trading-agent/shared';
 import { getToolsByIds } from '../tools/tool-registry';
+import { getEnabledToolIds } from '../tools/tool-config-store';
 import { agentTemplates } from './agent-templates';
 import { getDb, DB_URL } from '../db';
 import { runMigrations } from '../db-migrations';
@@ -246,8 +247,19 @@ export async function createAgentFromTemplate(
  * 动态绑定 tools、model、instructions 和 memory。
  * 如果传入 subAgents，则作为 supervisor agent 的子 agent 注入。
  */
-export function instantiateAgent(config: AgentConfig, subAgents?: Record<string, Agent>): Agent {
-  const tools = getToolsByIds(config.toolIds);
+export async function instantiateAgent(config: AgentConfig, subAgents?: Record<string, Agent>): Promise<Agent> {
+  // 获取已启用的工具 ID 集合，过滤掉被禁用的工具
+  const enabledToolIds = await getEnabledToolIds();
+  const activeToolIds = config.toolIds.filter(id => enabledToolIds.has(id));
+
+  if (activeToolIds.length < config.toolIds.length) {
+    const disabled = config.toolIds.filter(id => !enabledToolIds.has(id));
+    console.warn(
+      `[AgentRegistry] Agent "${config.id}" has disabled tools: ${disabled.join(', ')}`,
+    );
+  }
+
+  const tools = getToolsByIds(activeToolIds);
 
   const agentOptions: Record<string, unknown> = {
     id: config.id,
@@ -291,7 +303,7 @@ export async function loadAllAgents(): Promise<Record<string, any>> {
   // 第一轮：实例化所有 agent（不注入子 agent）
   for (const config of configs) {
     try {
-      agents[config.id] = instantiateAgent(config);
+      agents[config.id] = await instantiateAgent(config);
     } catch (error) {
       console.error(`[AgentRegistry] Failed to instantiate agent "${config.id}":`, error);
     }
@@ -310,7 +322,7 @@ export async function loadAllAgents(): Promise<Record<string, any>> {
       }
       // 重新实例化 supervisor，注入子 agent
       try {
-        agents[config.id] = instantiateAgent(config, subAgents);
+        agents[config.id] = await instantiateAgent(config, subAgents);
       } catch (error) {
         console.error(`[AgentRegistry] Failed to re-instantiate supervisor "${config.id}":`, error);
       }

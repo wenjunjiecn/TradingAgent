@@ -159,9 +159,14 @@ export default function Tools() {
                           {t('tools:list.builtin')}
                         </span>
                       ) : (
-                        <span className="shrink-0 rounded border border-accent1/30 bg-accent1/10 px-1.5 py-0.5 text-[10px] font-medium text-accent1">
-                          {t('tools:list.custom')}
-                        </span>
+                        <>
+                          <span className="shrink-0 rounded border border-accent1/30 bg-accent1/10 px-1.5 py-0.5 text-[10px] font-medium text-accent1">
+                            {t('tools:list.custom')}
+                          </span>
+                          <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                            {t('tools:edit.metadataOnlyBadge')}
+                          </span>
+                        </>
                       )}
                     </div>
                     <p className="mt-0.5 line-clamp-2 text-xs text-neutral3">

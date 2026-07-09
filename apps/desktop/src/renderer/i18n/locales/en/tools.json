@@ -51,6 +51,10 @@
     "saved": "Saved successfully",
     "saveFailed": "Save failed: {{error}}",
     "invalidJson": "Invalid JSON format",
-    "builtinNotDeletable": "Built-in tools cannot be deleted"
+    "builtinNotDeletable": "Built-in tools cannot be deleted",
+    "metadataOnlyHint": "Custom tools only save metadata (name, description, category). The actual execution logic must be implemented in backend code and registered in toolRegistry before agents can use it.",
+    "metadataOnlyBadge": "Metadata Only",
+    "builtinReadOnlyFields": "Schema and description of built-in tools are defined in code. Edits are for reference only and do not affect tool behavior.",
+    "builtinFieldsLocked": "Built-in tool schemas are defined in code and cannot be edited here"
   }
 }
