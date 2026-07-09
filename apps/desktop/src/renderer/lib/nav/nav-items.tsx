@@ -85,9 +85,9 @@ export const mainNav: NavSection[] = [
       },
       {
         name: 'nav:items.skills',
-        url: '/workspaces',
+        url: '/skills',
         Icon: WorkspacesIcon,
-        isOnMastraPlatform: true,
+        isOnMastraPlatform: false,
       },
     ],
   },

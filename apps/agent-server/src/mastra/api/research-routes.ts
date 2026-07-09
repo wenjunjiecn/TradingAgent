@@ -10,6 +10,7 @@ import {
 import { agentTemplates } from '../agents/agent-templates';
 import { teamRoutes } from './team-routes';
 import { toolRoutes } from './tool-routes';
+import { skillRoutes } from './skill-routes';
 import {
   initReportStore,
   listReports,
@@ -312,6 +313,8 @@ export const researchRoutes: ApiRoute[] = [
   ...teamRoutes,
   // Tool configs
   ...toolRoutes,
+  // Skill configs
+  ...skillRoutes,
   // Market data
   getMarketDataRoute,
   getIndicatorsRoute,

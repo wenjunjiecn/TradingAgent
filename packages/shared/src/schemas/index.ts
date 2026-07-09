@@ -5,3 +5,4 @@ export * from './fundamentals.js';
 export * from './agent-config.js';
 export * from './team-config.js';
 export * from './tool-config.js';
+export * from './skill-config.js';

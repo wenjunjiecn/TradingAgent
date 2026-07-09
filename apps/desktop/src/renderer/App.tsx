@@ -120,6 +120,7 @@ import { PlaygroundQueryClient } from '@/lib/tanstack-query';
 import { Processors } from '@/pages/processors';
 import { Processor } from '@/pages/processors/processor';
 import Tools from '@/pages/tools';
+import Skills from '@/pages/skills';
 
 // Extend window type for Mastra config
 declare global {
@@ -519,6 +520,8 @@ export const routes: RouteObject[] = [
         element: <Tool />,
         handle: navHandleWithChildren('/tools', [{ id: 'tool', Component: ToolCrumb, heading: 'Tool' }]),
       },
+
+      { path: '/skills', element: <Skills />, handle: navHandle('/skills') },
 
       {
         path: '/integrations',
