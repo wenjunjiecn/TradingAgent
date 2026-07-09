@@ -114,7 +114,7 @@ export function AppSidebar() {
             <span className="flex items-center gap-2 flex-1 min-w-0">
               <LogoWithoutText className="h-[1.5rem] w-[1.5rem] shrink-0" />
               <span className="font-display text-sm font-semibold tracking-tight whitespace-nowrap truncate">
-                Trading Agent
+                {tNav('appName')}
               </span>
               {!isMobile && <MainSidebar.Trigger />}
             </span>
@@ -124,7 +124,7 @@ export function AppSidebar() {
           <span className="flex items-center gap-2 pl-3 pr-2">
             <LogoWithoutText className="h-[1.5rem] w-[1.5rem] shrink-0" />
             <span className="font-display text-sm font-semibold tracking-tight whitespace-nowrap truncate">
-              Trading Agent
+              {tNav('appName')}
             </span>
             {!isMobile && <MainSidebar.Trigger />}
           </span>
@@ -138,7 +138,7 @@ export function AppSidebar() {
               asChild
               state={state}
               link={{
-                name: 'Search',
+                name: tNav('items.search'),
                 url: '#',
                 icon: <Search />,
               }}
@@ -146,11 +146,11 @@ export function AppSidebar() {
               <button
                 type="button"
                 onClick={openNavigationCommand}
-                aria-label="Search and navigate"
+                aria-label={tNav('search.ariaLabel')}
                 className="border border-border1 bg-surface3 text-neutral5 hover:bg-surface4 hover:text-neutral6 active:bg-surface5 [&_svg]:text-neutral4 [&:hover_svg]:text-neutral5"
               >
                 <Search />
-                <MainSidebar.NavLabel state={state}>Search</MainSidebar.NavLabel>
+                <MainSidebar.NavLabel state={state}>{tNav('items.search')}</MainSidebar.NavLabel>
                 {state !== 'collapsed' && (
                   <kbd
                     aria-hidden="true"
@@ -172,7 +172,7 @@ export function AppSidebar() {
               LinkComponent={Link}
               state={state}
               link={{
-                name: 'Agent Builder',
+                name: tNav('items.agentBuilder'),
                 url: '/agent-builder',
                 icon: <Wrench />,
               }}

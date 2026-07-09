@@ -140,11 +140,6 @@ function getRouteValue(item: NavItem, sectionTitle?: string) {
   return [item.name, item.url, sectionTitle, 'path route navigate'].filter(Boolean).join(' ');
 }
 
-function getRouteBadge(sectionTitle?: string) {
-  if (!sectionTitle || sectionTitle === 'Studio') return 'Path';
-  return sectionTitle;
-}
-
 function getObservabilityEntityPath(entity: string) {
   return `/observability?entity=${encodeURIComponent(entity)}`;
 }
@@ -218,10 +213,11 @@ const ShortcutResults = ({
   sidebarShortcutLabel: string;
   setOpen: (open: boolean) => void;
 }) => {
+  const { t: tNav } = useTranslation('nav');
   if (!sidebar || (activeScope !== 'all' && activeScope !== 'settings')) return null;
 
   return (
-    <CommandGroup heading="Shortcuts">
+    <CommandGroup heading={tNav('command.headings.shortcuts')}>
       <NavigationCommandItem
         value="toggle sidebar collapse expand layout panel shortcut command b ctrl b"
         onSelect={() => {
@@ -229,9 +225,9 @@ const ShortcutResults = ({
           setOpen(false);
         }}
         icon={<PanelLeftIcon />}
-        title="Toggle Sidebar"
-        subtitle="Studio layout"
-        badge="Shortcut"
+        title={tNav('command.titles.toggleSidebar')}
+        subtitle={tNav('command.subtitles.toggleSidebar')}
+        badge={tNav('command.badges.shortcut')}
         shortcut={
           <CommandShortcut className="flex items-center">
             <Kbd className="text-[10px]">{sidebarShortcutLabel}</Kbd>
@@ -248,29 +244,32 @@ const PathSectionResults = ({
 }: {
   sections: NavigationSection[];
   handleSelect: HandleSelect;
-}) => (
-  <>
-    {sections.map(section => (
-      <CommandGroup key={section.key} heading={section.title}>
-        {section.items.map(item => {
-          const Icon = item.Icon;
-          return (
-            <NavigationCommandItem
-              key={item.url}
-              value={getRouteValue(item, section.title)}
-              onSelect={() => handleSelect(item.url)}
-              icon={<Icon />}
-              title={item.name}
-              subtitle="Studio path"
-              path={item.url}
-              badge={getRouteBadge(section.title)}
-            />
-          );
-        })}
-      </CommandGroup>
-    ))}
-  </>
-);
+}) => {
+  const { t: tNav } = useTranslation('nav');
+  return (
+    <>
+      {sections.map(section => (
+        <CommandGroup key={section.key} heading={section.title}>
+          {section.items.map(item => {
+            const Icon = item.Icon;
+            return (
+              <NavigationCommandItem
+                key={item.url}
+                value={getRouteValue(item, section.title)}
+                onSelect={() => handleSelect(item.url)}
+                icon={<Icon />}
+                title={item.name}
+                subtitle={tNav('command.subtitles.studioPath')}
+                path={item.url}
+                badge={section.key === 'studio' ? tNav('command.badges.path') : section.title}
+              />
+            );
+          })}
+        </CommandGroup>
+      ))}
+    </>
+  );
+};
 
 const AgentResults = ({
   visible,
@@ -283,10 +282,11 @@ const AgentResults = ({
   paths: NavigationPaths;
   handleSelect: HandleSelect;
 }) => {
+  const { t: tNav } = useTranslation('nav');
   if (!visible || entries.length === 0) return null;
 
   return (
-    <CommandGroup heading="Agents">
+    <CommandGroup heading={tNav('command.headings.agents')}>
       {entries.map(([id, agent]) => (
         <NavigationCommandItem
           key={id}
@@ -294,9 +294,9 @@ const AgentResults = ({
           onSelect={() => handleSelect(paths.agentLink(id))}
           icon={<AgentIcon />}
           title={agent.name}
-          subtitle="Agent chat"
+          subtitle={tNav('command.subtitles.agentChat')}
           path={paths.agentLink(id)}
-          badge="Agent"
+          badge={tNav('command.badges.agent')}
         />
       ))}
     </CommandGroup>
@@ -314,10 +314,11 @@ const WorkflowResults = ({
   paths: NavigationPaths;
   handleSelect: HandleSelect;
 }) => {
+  const { t: tNav } = useTranslation('nav');
   if (!visible || entries.length === 0) return null;
 
   return (
-    <CommandGroup heading="Workflows">
+    <CommandGroup heading={tNav('command.headings.workflows')}>
       {entries.map(([id, workflow]) => (
         <NavigationCommandItem
           key={id}
@@ -325,9 +326,9 @@ const WorkflowResults = ({
           onSelect={() => handleSelect(paths.workflowLink(id))}
           icon={<WorkflowIcon />}
           title={workflow.name}
-          subtitle="Workflow graph"
+          subtitle={tNav('command.subtitles.workflowGraph')}
           path={paths.workflowLink(id)}
-          badge="Workflow"
+          badge={tNav('command.badges.workflow')}
         />
       ))}
     </CommandGroup>
@@ -345,10 +346,11 @@ const ToolResults = ({
   paths: NavigationPaths;
   handleSelect: HandleSelect;
 }) => {
+  const { t: tNav } = useTranslation('nav');
   if (!visible || entries.length === 0) return null;
 
   return (
-    <CommandGroup heading="Tools">
+    <CommandGroup heading={tNav('command.headings.tools')}>
       {entries.map(([id, tool]) => (
         <NavigationCommandItem
           key={id}
@@ -356,9 +358,9 @@ const ToolResults = ({
           onSelect={() => handleSelect(paths.toolLink(id))}
           icon={<ToolsIcon />}
           title={tool.id}
-          subtitle="Tool definition"
+          subtitle={tNav('command.subtitles.toolDefinition')}
           path={paths.toolLink(id)}
-          badge="Tool"
+          badge={tNav('command.badges.tool')}
         />
       ))}
     </CommandGroup>
@@ -376,10 +378,11 @@ const ProcessorResults = ({
   paths: NavigationPaths;
   handleSelect: HandleSelect;
 }) => {
+  const { t: tNav } = useTranslation('nav');
   if (!visible || entries.length === 0) return null;
 
   return (
-    <CommandGroup heading="Processors">
+    <CommandGroup heading={tNav('command.headings.processors')}>
       {entries.map(processor => {
         const displayName = processor.name || processor.id;
         const targetPath = processor.isWorkflow
@@ -392,9 +395,9 @@ const ProcessorResults = ({
             onSelect={() => handleSelect(targetPath)}
             icon={<Cpu />}
             title={displayName}
-            subtitle={processor.isWorkflow ? 'Workflow processor' : 'Processor'}
+            subtitle={processor.isWorkflow ? tNav('command.subtitles.workflowProcessor') : tNav('command.subtitles.processor')}
             path={targetPath}
-            badge="Processor"
+            badge={tNav('command.badges.processor')}
           />
         );
       })}
@@ -413,10 +416,11 @@ const McpServerResults = ({
   paths: NavigationPaths;
   handleSelect: HandleSelect;
 }) => {
+  const { t: tNav } = useTranslation('nav');
   if (!visible || entries.length === 0) return null;
 
   return (
-    <CommandGroup heading="MCP Servers">
+    <CommandGroup heading={tNav('command.headings.mcpServers')}>
       {entries.map(server => (
         <NavigationCommandItem
           key={server.id}
@@ -424,9 +428,9 @@ const McpServerResults = ({
           onSelect={() => handleSelect(paths.mcpServerLink(server.id))}
           icon={<McpServerIcon />}
           title={server.name}
-          subtitle="MCP server"
+          subtitle={tNav('command.subtitles.mcpServer')}
           path={paths.mcpServerLink(server.id)}
-          badge="MCP"
+          badge={tNav('command.badges.mcp')}
         />
       ))}
     </CommandGroup>
@@ -444,42 +448,43 @@ const ObservabilityResults = ({
   workflowEntries: WorkflowEntry[];
   handleSelect: HandleSelect;
 }) => {
+  const { t: tNav } = useTranslation('nav');
   if (!visible) return null;
 
   return (
     <>
-      <CommandGroup heading="Observability">
+      <CommandGroup heading={tNav('command.headings.observability')}>
         <NavigationCommandItem
           value="observability traces telemetry signals /observability"
           onSelect={() => handleSelect('/observability')}
           icon={<EyeIcon />}
-          title="Traces"
-          subtitle="Runtime traces"
+          title={tNav('command.titles.traces')}
+          subtitle={tNav('command.subtitles.runtimeTraces')}
           path="/observability"
-          badge="Signal"
+          badge={tNav('command.badges.signal')}
         />
         <NavigationCommandItem
           value="metrics usage latency performance tokens /metrics"
           onSelect={() => handleSelect('/metrics')}
           icon={<GaugeIcon />}
-          title="Metrics"
-          subtitle="Runtime metrics"
+          title={tNav('command.titles.metrics')}
+          subtitle={tNav('command.subtitles.runtimeMetrics')}
           path="/metrics"
-          badge="Signal"
+          badge={tNav('command.badges.signal')}
         />
         <NavigationCommandItem
           value="logs events runtime /logs"
           onSelect={() => handleSelect('/logs')}
           icon={<EyeIcon />}
-          title="Logs"
-          subtitle="Runtime logs"
+          title={tNav('command.titles.logs')}
+          subtitle={tNav('command.subtitles.runtimeLogs')}
           path="/logs"
-          badge="Signal"
+          badge={tNav('command.badges.signal')}
         />
       </CommandGroup>
 
       {agentEntries.length > 0 && (
-        <CommandGroup heading="Agent Traces">
+        <CommandGroup heading={tNav('command.headings.agentTraces')}>
           {agentEntries.map(([id, agent]) => {
             const path = getObservabilityEntityPath(id);
 
@@ -490,9 +495,9 @@ const ObservabilityResults = ({
                 onSelect={() => handleSelect(path)}
                 icon={<EyeIcon />}
                 title={agent.name}
-                subtitle="Agent traces"
+                subtitle={tNav('command.subtitles.agentTraces')}
                 path={path}
-                badge="Trace"
+                badge={tNav('command.badges.trace')}
               />
             );
           })}
@@ -500,7 +505,7 @@ const ObservabilityResults = ({
       )}
 
       {workflowEntries.length > 0 && (
-        <CommandGroup heading="Workflow Traces">
+        <CommandGroup heading={tNav('command.headings.workflowTraces')}>
           {workflowEntries.map(([id, workflow]) => {
             const path = getObservabilityEntityPath(workflow.name);
 
@@ -511,9 +516,9 @@ const ObservabilityResults = ({
                 onSelect={() => handleSelect(path)}
                 icon={<EyeIcon />}
                 title={workflow.name}
-                subtitle="Workflow traces"
+                subtitle={tNav('command.subtitles.workflowTraces')}
                 path={path}
-                badge="Trace"
+                badge={tNav('command.badges.trace')}
               />
             );
           })}
@@ -534,10 +539,11 @@ const EvaluationResults = ({
   paths: NavigationPaths;
   handleSelect: HandleSelect;
 }) => {
+  const { t: tNav } = useTranslation('nav');
   if (!visible || entries.length === 0) return null;
 
   return (
-    <CommandGroup heading="Scorers">
+    <CommandGroup heading={tNav('command.headings.scorers')}>
       {entries.map(([id, scorer]) => {
         const name = scorer.scorer?.config?.name || scorer.scorer?.config?.id || id;
         return (
@@ -547,9 +553,9 @@ const EvaluationResults = ({
             onSelect={() => handleSelect(paths.scorerLink(id))}
             icon={<GaugeIcon />}
             title={name}
-            subtitle="Evaluation scorer"
+            subtitle={tNav('command.subtitles.evaluationScorer')}
             path={paths.scorerLink(id)}
-            badge="Scorer"
+            badge={tNav('command.badges.scorer')}
           />
         );
       })}
@@ -557,17 +563,20 @@ const EvaluationResults = ({
   );
 };
 
-const CommandFooter = () => (
-  <div className="navigation-command-footer pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-3 px-4 pb-2 pt-5 text-ui-xs text-neutral3">
-    <span className="truncate">Studio search</span>
-    <span className="flex shrink-0 items-center gap-1.5">
-      <Kbd className="min-w-5 px-1 text-[10px]">↑</Kbd>
-      <Kbd className="min-w-5 px-1 text-[10px]">↓</Kbd>
-      <Kbd className="min-w-5 px-1 text-[10px]">↵</Kbd>
-      <Kbd className="min-w-5 px-1 text-[10px]">Esc</Kbd>
-    </span>
-  </div>
-);
+const CommandFooter = () => {
+  const { t: tNav } = useTranslation('nav');
+  return (
+    <div className="navigation-command-footer pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-3 px-4 pb-2 pt-5 text-ui-xs text-neutral3">
+      <span className="truncate">{tNav('command.footerLabel')}</span>
+      <span className="flex shrink-0 items-center gap-1.5">
+        <Kbd className="min-w-5 px-1 text-[10px]">↑</Kbd>
+        <Kbd className="min-w-5 px-1 text-[10px]">↓</Kbd>
+        <Kbd className="min-w-5 px-1 text-[10px]">↵</Kbd>
+        <Kbd className="min-w-5 px-1 text-[10px]">Esc</Kbd>
+      </span>
+    </div>
+  );
+};
 
 export const NavigationCommand = () => {
   const { open, setOpen } = useNavigationCommand();
@@ -633,7 +642,7 @@ export const NavigationCommand = () => {
       ...(!isMastraPlatform
         ? [
             {
-              name: 'Templates',
+              name: tNav('command.templates'),
               url: '/templates',
               Icon: PackageIcon,
               isOnMastraPlatform: false,
@@ -643,7 +652,7 @@ export const NavigationCommand = () => {
     ];
 
     if (studioItems.length === 0) return sections;
-    return [...sections, { key: 'studio', title: 'Studio', items: studioItems }];
+    return [...sections, { key: 'studio', title: tNav('command.studioSection'), items: studioItems }];
   }, [filterNavItem, isMastraPlatform, tNav]);
 
   const pathCount = navigationSections.reduce((count, section) => count + section.items.length, 0);
@@ -655,14 +664,14 @@ export const NavigationCommand = () => {
     pathCount + agentEntries.length + workflowEntries.length + toolingCount + evaluationCount + observabilityCount;
 
   const scopeOptions: ScopeOption[] = [
-    { id: 'all', label: 'All', icon: <SearchIcon />, count: allCount },
-    { id: 'paths', label: 'Paths', icon: <RouteIcon />, count: pathCount },
-    { id: 'agents', label: 'Agents', icon: <AgentIcon />, count: agentEntries.length },
-    { id: 'workflows', label: 'Workflows', icon: <WorkflowIcon />, count: workflowEntries.length },
-    { id: 'tooling', label: 'Tooling', icon: <Layers3Icon />, count: toolingCount },
-    { id: 'evaluation', label: 'Evaluation', icon: <GaugeIcon />, count: evaluationCount },
-    { id: 'observability', label: 'Signals', icon: <EyeIcon />, count: observabilityCount },
-    { id: 'settings', label: 'Studio', icon: <SlidersHorizontalIcon />, count: settingsCount },
+    { id: 'all', label: tNav('command.scopes.all'), icon: <SearchIcon />, count: allCount },
+    { id: 'paths', label: tNav('command.scopes.paths'), icon: <RouteIcon />, count: pathCount },
+    { id: 'agents', label: tNav('command.scopes.agents'), icon: <AgentIcon />, count: agentEntries.length },
+    { id: 'workflows', label: tNav('command.scopes.workflows'), icon: <WorkflowIcon />, count: workflowEntries.length },
+    { id: 'tooling', label: tNav('command.scopes.tooling'), icon: <Layers3Icon />, count: toolingCount },
+    { id: 'evaluation', label: tNav('command.scopes.evaluation'), icon: <GaugeIcon />, count: evaluationCount },
+    { id: 'observability', label: tNav('command.scopes.signals'), icon: <EyeIcon />, count: observabilityCount },
+    { id: 'settings', label: tNav('command.scopes.studio'), icon: <SlidersHorizontalIcon />, count: settingsCount },
   ];
 
   const showPaths = activeScope === 'all' || activeScope === 'paths';
@@ -695,8 +704,8 @@ export const NavigationCommand = () => {
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
-      title="Trading Agent Search"
-      description="Search Studio routes and runtime entities"
+      title={tNav('command.title')}
+      description={tNav('command.description')}
       showOverlay
       overlayClassName="bg-surface1/40 backdrop-blur-none"
       contentClassName="navigation-command-popup max-w-[min(56rem,calc(100vw-2rem))] overflow-visible border-none bg-transparent p-0 shadow-none backdrop-blur-none sm:max-w-[min(56rem,calc(100vw-2rem))]"
@@ -710,7 +719,7 @@ export const NavigationCommand = () => {
       )}
     >
       <CommandInput
-        placeholder="Search Studio, agents, workflows, tools, paths..."
+        placeholder={tNav('command.placeholder')}
         wrapperClassName="navigation-command-surface navigation-command-surface-input"
       />
 
@@ -725,7 +734,7 @@ export const NavigationCommand = () => {
               scrollAreaViewportClassName="navigation-command-scroll-viewport"
               className="navigation-command-list max-h-none rounded-none border-none bg-transparent shadow-none"
             >
-              <CommandEmpty>No matching results.</CommandEmpty>
+              <CommandEmpty>{tNav('command.empty')}</CommandEmpty>
               <ShortcutResults
                 sidebar={sidebar}
                 activeScope={activeScope}

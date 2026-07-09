@@ -1,4 +1,5 @@
 {
+  "appName": "Trading Agent",
   "sections": {
     "research": "Research",
     "system": "System"
@@ -12,6 +13,80 @@
     "agentConfig": "Agents",
     "tools": "Tool Config",
     "skills": "Skill Config",
-    "settings": "Settings"
+    "settings": "Settings",
+    "search": "Search",
+    "agentBuilder": "Agent Builder"
+  },
+  "search": {
+    "ariaLabel": "Search and navigate"
+  },
+  "impersonation": {
+    "previewing": "Previewing {{role}} experience",
+    "exit": "Exit role preview"
+  },
+  "command": {
+    "title": "Trading Agent Search",
+    "description": "Search Studio routes and runtime entities",
+    "placeholder": "Search Studio, agents, workflows, tools, paths...",
+    "empty": "No matching results.",
+    "footerLabel": "Studio search",
+    "templates": "Templates",
+    "studioSection": "Studio",
+    "scopes": {
+      "all": "All",
+      "paths": "Paths",
+      "agents": "Agents",
+      "workflows": "Workflows",
+      "tooling": "Tooling",
+      "evaluation": "Evaluation",
+      "signals": "Signals",
+      "studio": "Studio"
+    },
+    "headings": {
+      "shortcuts": "Shortcuts",
+      "agents": "Agents",
+      "workflows": "Workflows",
+      "tools": "Tools",
+      "processors": "Processors",
+      "mcpServers": "MCP Servers",
+      "observability": "Observability",
+      "agentTraces": "Agent Traces",
+      "workflowTraces": "Workflow Traces",
+      "scorers": "Scorers"
+    },
+    "subtitles": {
+      "toggleSidebar": "Studio layout",
+      "studioPath": "Studio path",
+      "agentChat": "Agent chat",
+      "workflowGraph": "Workflow graph",
+      "toolDefinition": "Tool definition",
+      "processor": "Processor",
+      "workflowProcessor": "Workflow processor",
+      "mcpServer": "MCP server",
+      "runtimeTraces": "Runtime traces",
+      "runtimeMetrics": "Runtime metrics",
+      "runtimeLogs": "Runtime logs",
+      "agentTraces": "Agent traces",
+      "workflowTraces": "Workflow traces",
+      "evaluationScorer": "Evaluation scorer"
+    },
+    "titles": {
+      "toggleSidebar": "Toggle Sidebar",
+      "traces": "Traces",
+      "metrics": "Metrics",
+      "logs": "Logs"
+    },
+    "badges": {
+      "shortcut": "Shortcut",
+      "path": "Path",
+      "agent": "Agent",
+      "workflow": "Workflow",
+      "tool": "Tool",
+      "processor": "Processor",
+      "mcp": "MCP",
+      "signal": "Signal",
+      "trace": "Trace",
+      "scorer": "Scorer"
+    }
   }
 }

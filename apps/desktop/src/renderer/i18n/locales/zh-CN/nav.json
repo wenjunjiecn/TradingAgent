@@ -1,4 +1,5 @@
 {
+  "appName": "Trading Agent",
   "sections": {
     "research": "投研",
     "system": "配置"
@@ -6,12 +7,86 @@
   "items": {
     "dashboard": "投研看板",
     "collaboration": "协同投研",
-    "agentTeam": "Agent Team",
+    "agentTeam": "Agent 团队",
     "reports": "投研报告",
     "marketData": "行情数据",
     "agentConfig": "Agent",
     "tools": "工具",
     "skills": "技能",
-    "settings": "Settings"
+    "settings": "设置",
+    "search": "搜索",
+    "agentBuilder": "Agent 构建器"
+  },
+  "search": {
+    "ariaLabel": "搜索并导航"
+  },
+  "impersonation": {
+    "previewing": "正在预览 {{role}} 体验",
+    "exit": "退出角色预览"
+  },
+  "command": {
+    "title": "Trading Agent 搜索",
+    "description": "搜索 Studio 路由和运行时实体",
+    "placeholder": "搜索 Studio、Agent、工作流、工具、路径...",
+    "empty": "没有匹配的结果。",
+    "footerLabel": "Studio 搜索",
+    "templates": "模板",
+    "studioSection": "Studio",
+    "scopes": {
+      "all": "全部",
+      "paths": "路径",
+      "agents": "Agent",
+      "workflows": "工作流",
+      "tooling": "工具",
+      "evaluation": "评估",
+      "signals": "信号",
+      "studio": "Studio"
+    },
+    "headings": {
+      "shortcuts": "快捷键",
+      "agents": "Agent",
+      "workflows": "工作流",
+      "tools": "工具",
+      "processors": "处理器",
+      "mcpServers": "MCP 服务器",
+      "observability": "可观测性",
+      "agentTraces": "Agent 追踪",
+      "workflowTraces": "工作流追踪",
+      "scorers": "评分器"
+    },
+    "subtitles": {
+      "toggleSidebar": "Studio 布局",
+      "studioPath": "Studio 路径",
+      "agentChat": "Agent 对话",
+      "workflowGraph": "工作流图",
+      "toolDefinition": "工具定义",
+      "processor": "处理器",
+      "workflowProcessor": "工作流处理器",
+      "mcpServer": "MCP 服务器",
+      "runtimeTraces": "运行时追踪",
+      "runtimeMetrics": "运行时指标",
+      "runtimeLogs": "运行时日志",
+      "agentTraces": "Agent 追踪",
+      "workflowTraces": "工作流追踪",
+      "evaluationScorer": "评估评分器"
+    },
+    "titles": {
+      "toggleSidebar": "切换侧边栏",
+      "traces": "追踪",
+      "metrics": "指标",
+      "logs": "日志"
+    },
+    "badges": {
+      "shortcut": "快捷键",
+      "path": "路径",
+      "agent": "Agent",
+      "workflow": "工作流",
+      "tool": "工具",
+      "processor": "处理器",
+      "mcp": "MCP",
+      "signal": "信号",
+      "trace": "追踪",
+      "scorer": "评分器"
+    }
   }
 }
