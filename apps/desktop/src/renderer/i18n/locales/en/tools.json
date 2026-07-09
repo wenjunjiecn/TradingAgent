@@ -1,7 +1,7 @@
 {
   "list": {
     "title": "Tool Configuration",
-    "subtitle": "Manage tool metadata, categories, and enabled status",
+    "subtitle": "Manage tool metadata, execution config, and enabled status",
     "create": "New Tool",
     "deleteConfirm": "Are you sure you want to delete tool \"{{name}}\"?",
     "empty": "No tools configured yet. Click \"New Tool\" to create one.",
@@ -15,7 +15,11 @@
     "custom": "Custom",
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "noMatch": "No tools match your search"
+    "noMatch": "No tools match your search",
+    "testButton": "Test",
+    "typeBuiltin": "Builtin",
+    "typeHttp": "HTTP",
+    "typeMcp": "MCP"
   },
   "categories": {
     "market-data": "Market Data",
@@ -37,14 +41,19 @@
     "description": "Description",
     "descriptionPlaceholder": "Describe the tool's purpose and functionality...",
     "category": "Category",
+    "type": "Execution Type",
+    "typeHint": "Choose how the tool executes",
+    "typeBuiltin": "Builtin (code-defined)",
+    "typeHttp": "HTTP Request",
+    "typeMcp": "MCP Remote Tool",
     "enabled": "Enabled",
     "enabledHint": "When disabled, agents cannot use this tool",
     "inputSchema": "Input Schema (JSON)",
     "inputSchemaPlaceholder": "{ \"type\": \"object\", \"properties\": { ... } }",
     "outputSchema": "Output Schema (JSON)",
     "outputSchemaPlaceholder": "{ \"type\": \"object\", \"properties\": { ... } }",
-    "config": "Extra Config (JSON)",
-    "configPlaceholder": "{ \"timeout\": 10000 }",
+    "config": "Execution Config (JSON)",
+    "configPlaceholder": "Fill in config based on execution type",
     "save": "Save",
     "cancel": "Cancel",
     "saving": "Saving...",
@@ -52,9 +61,19 @@
     "saveFailed": "Save failed: {{error}}",
     "invalidJson": "Invalid JSON format",
     "builtinNotDeletable": "Built-in tools cannot be deleted",
-    "metadataOnlyHint": "Custom tools only save metadata (name, description, category). The actual execution logic must be implemented in backend code and registered in toolRegistry before agents can use it.",
-    "metadataOnlyBadge": "Metadata Only",
     "builtinReadOnlyFields": "Schema and description of built-in tools are defined in code. Edits are for reference only and do not affect tool behavior.",
-    "builtinFieldsLocked": "Built-in tool schemas are defined in code and cannot be edited here"
+    "builtinFieldsLocked": "Built-in tool schemas are defined in code and cannot be edited here",
+    "httpConfigHint": "HTTP config: url, method, headers, queryParams, bodyTemplate, timeoutMs, responsePath",
+    "mcpConfigHint": "MCP config: serverUrl, serverName, remoteToolName, authToken"
+  },
+  "test": {
+    "title": "Test Tool",
+    "inputPlaceholder": "Enter test parameters (JSON)...",
+    "run": "Run Test",
+    "running": "Running...",
+    "result": "Result",
+    "error": "Error",
+    "success": "Success",
+    "emptyInput": "Please enter JSON test parameters"
   }
 }

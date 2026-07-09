@@ -259,7 +259,7 @@ export async function instantiateAgent(config: AgentConfig, subAgents?: Record<s
     );
   }
 
-  const tools = getToolsByIds(activeToolIds);
+  const tools = await getToolsByIds(activeToolIds);
 
   const agentOptions: Record<string, unknown> = {
     id: config.id,

@@ -6,8 +6,12 @@ import { toolRegistry } from './tool-registry';
 /**
  * 工具配置存储
  *
- * 管理工具的元数据配置（名称、描述、分类、启用状态等），
+ * 管理工具的元数据配置（名称、描述、分类、执行类型、启用状态等），
  * 支持前端 CRUD 操作。内置工具从 toolRegistry 种子化，不可删除。
+ *
+ * v2: ToolConfig 新增 type 字段 (builtin/http/mcp)，inputSchema/outputSchema
+ *     从 string 改为 Record<string, any> (JSON Schema 对象)。
+ *     旧数据通过 migrateToolConfigs() 自动迁移。
  */
 
 const TABLE_NAME = 'tool_configs';
@@ -28,6 +32,71 @@ async function ensureTable(): Promise<void> {
   `);
 }
 
+/**
+ * v1 → v2 数据迁移
+ *
+ * - inputSchema/outputSchema: string → JSON.parse → object
+ * - 新增 type 字段: 默认 builtin (内置) 或 http (自定义)
+ * - 幂等: 已迁移的记录不重复处理
+ */
+async function migrateToolConfigs(): Promise<void> {
+  const db = getDbClient();
+  const result = await db.execute(`SELECT id, config FROM ${TABLE_NAME}`);
+
+  const updates: Array<{ sql: string; args: any[] }> = [];
+
+  for (const row of result.rows) {
+    const raw = (row as any).config as string;
+    try {
+      const config = JSON.parse(raw);
+
+      // 检测旧格式: inputSchema/outputSchema 是 string 或 type 缺失
+      const needsMigration =
+        typeof config.inputSchema === 'string' ||
+        typeof config.outputSchema === 'string' ||
+        config.type === undefined;
+
+      if (!needsMigration) continue;
+
+      // 迁移 inputSchema: string → parsed object
+      if (typeof config.inputSchema === 'string') {
+        try {
+          config.inputSchema = config.inputSchema ? JSON.parse(config.inputSchema) : undefined;
+        } catch {
+          config.inputSchema = undefined;
+        }
+      }
+
+      // 迁移 outputSchema: string → parsed object
+      if (typeof config.outputSchema === 'string') {
+        try {
+          config.outputSchema = config.outputSchema ? JSON.parse(config.outputSchema) : undefined;
+        } catch {
+          config.outputSchema = undefined;
+        }
+      }
+
+      // 新增 type 字段
+      if (!config.type) {
+        config.type = config.isBuiltin ? 'builtin' : 'http';
+      }
+
+      const now = new Date().toISOString();
+      updates.push({
+        sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ? WHERE id = ?`,
+        args: [JSON.stringify(config), now, config.id],
+      });
+    } catch {
+      // 跳过损坏记录
+    }
+  }
+
+  if (updates.length > 0) {
+    await db.batch(updates as never);
+    console.log(`[ToolConfigStore] Migrated ${updates.length} tool configs to v2`);
+  }
+}
+
 /** 内置工具友好显示名称映射 */
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
   'get-market-data': '行情数据获取',
@@ -35,6 +104,29 @@ const TOOL_DISPLAY_NAMES: Record<string, string> = {
   'news-sentiment': '新闻情绪分析',
   'fundamentals': '基本面数据',
 };
+
+/**
+ * 将 Zod schema 的 .toJSON() / 内部结构转为 JSON Schema 对象
+ *
+ * Mastra createTool 的 inputSchema/outputSchema 是 Zod schema，
+ * 我们需要将其转为 JSON Schema 对象存入 DB。
+ * 使用 zod-to-json-schema 的轻量替代: 直接从 Zod 内部结构提取。
+ */
+function zodToJsonSchema(zodSchema: any): Record<string, any> | undefined {
+  if (!zodSchema) return undefined;
+  try {
+    // Zod v3: 使用 _def 递归提取
+    // 简化实现: 如果 Zod schema 有 .toJSON() 方法就用它
+    if (typeof zodSchema.toJSON === 'function') {
+      return zodSchema.toJSON();
+    }
+    // 否则尝试使用 zod-to-json-schema (如果安装了)
+    // 兜底: 返回 undefined
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** 从 toolRegistry 构建内置工具配置种子 */
 function buildBuiltinSeeds(): ToolConfig[] {
@@ -47,22 +139,20 @@ function buildBuiltinSeeds(): ToolConfig[] {
   };
 
   return Object.values(toolRegistry).map((tool: any) => {
-    const inputSchemaStr = tool.inputSchema
-      ? JSON.stringify(tool.inputSchema, null, 2)
-      : undefined;
-    const outputSchemaStr = tool.outputSchema
-      ? JSON.stringify(tool.outputSchema, null, 2)
-      : undefined;
+    // 尝试将 Zod schema 转为 JSON Schema 对象
+    const inputJsonSchema = zodToJsonSchema(tool.inputSchema);
+    const outputJsonSchema = zodToJsonSchema(tool.outputSchema);
 
     return {
       id: tool.id,
       name: TOOL_DISPLAY_NAMES[tool.id] ?? tool.id,
       description: tool.description ?? '',
       category: categoryMap[tool.id] ?? 'custom',
+      type: 'builtin' as const,
       enabled: true,
       isBuiltin: true,
-      inputSchema: inputSchemaStr,
-      outputSchema: outputSchemaStr,
+      inputSchema: inputJsonSchema,
+      outputSchema: outputJsonSchema,
       config: {},
       createdAt: now,
       updatedAt: now,
@@ -73,7 +163,7 @@ function buildBuiltinSeeds(): ToolConfig[] {
 /**
  * 种子化：同步内置工具到 DB
  *
- * 新增的内置工具完整插入；已存在的仅同步 isBuiltin 标记，
+ * 新增的内置工具完整插入；已存在的仅同步 isBuiltin 和 type 标记，
  * 不覆盖用户对 name/description/category/inputSchema/outputSchema 的编辑。
  * JSON 损坏的记录用种子数据覆盖修复。
  * 所有写操作通过 db.batch() 在单个事务中执行。
@@ -120,19 +210,22 @@ async function seedBuiltinTools(): Promise<void> {
         sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ? WHERE id = ?`,
         args: [JSON.stringify(seed), now, seed.id],
       });
-    } else if (!existing.isBuiltin) {
-      // 仅当 isBuiltin 标记不一致时才更新
-      const updated: ToolConfig = {
-        ...existing,
-        isBuiltin: true,
-        updatedAt: now,
-      };
-      writeStatements.push({
-        sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ? WHERE id = ?`,
-        args: [JSON.stringify(updated), now, seed.id],
-      });
+    } else {
+      // 已存在 — 确保至少 isBuiltin 和 type 正确
+      const needsUpdate = !existing.isBuiltin || !existing.type || existing.type !== 'builtin';
+      if (needsUpdate) {
+        const updated: ToolConfig = {
+          ...existing,
+          isBuiltin: true,
+          type: 'builtin',
+          updatedAt: now,
+        };
+        writeStatements.push({
+          sql: `UPDATE ${TABLE_NAME} SET config = ?, updated_at = ? WHERE id = ?`,
+          args: [JSON.stringify(updated), now, seed.id],
+        });
+      }
     }
-    // else: 已存在且 isBuiltin 为 true — 不做任何操作
   }
 
   // 批量执行（libsql batch 自动包裹在事务中）
@@ -150,6 +243,7 @@ export async function initToolConfigStore(): Promise<void> {
   if (initPromise) return initPromise;
   initPromise = (async () => {
     await ensureTable();
+    await migrateToolConfigs();
     await seedBuiltinTools();
   })();
   return initPromise;

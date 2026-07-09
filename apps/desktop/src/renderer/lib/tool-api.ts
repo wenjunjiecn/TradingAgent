@@ -98,3 +98,13 @@ export function useDeleteTool() {
     },
   });
 }
+
+export function useTestTool() {
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Record<string, any> }) =>
+      apiFetch<{ result: any }>(`/tools/${id}/test`, {
+        method: 'POST',
+        body: JSON.stringify({ input }),
+      }),
+  });
+}

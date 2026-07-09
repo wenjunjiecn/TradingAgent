@@ -10,7 +10,6 @@ import { useTranslation } from 'react-i18next';
 import type { AgentFormValues, EntityConfig } from '../utils/form-validation';
 import { EntityAccordionItem } from '@/domains/cms';
 import { SectionTitle } from '@/domains/cms/components/section/section-title';
-import { useTools } from '@/domains/tools/hooks/use-all-tools';
 import { useToolConfigs } from '@/lib/tool-api';
 
 interface ToolsSectionProps {
@@ -22,35 +21,24 @@ interface ToolsSectionProps {
 export function ToolsSection({ control, error, readOnly = false }: ToolsSectionProps) {
   const { t } = useTranslation('agents');
   const [isOpen, setIsOpen] = useState(false);
-  const { data: tools, isLoading } = useTools();
-  const { data: toolConfigsData } = useToolConfigs();
+  const { data: toolConfigsData, isLoading } = useToolConfigs();
   const selectedTools = useWatch({ control, name: 'tools' });
   const count = Object.keys(selectedTools || {}).length;
 
-  // 构建 tool ID → enabled 的映射
-  const toolEnabledMap = useMemo(() => {
-    const map = new Map<string, boolean>();
-    if (toolConfigsData?.tools) {
-      for (const tc of toolConfigsData.tools) {
-        map.set(tc.id, tc.enabled);
-      }
-    }
-    return map;
-  }, [toolConfigsData]);
-
+  // 统一从 ToolConfig DB 获取工具列表
   const options = useMemo(() => {
-    if (!tools) return [];
-    return Object.entries(tools).map(([id, tool]) => {
-      const enabled = toolEnabledMap.get(id) ?? true;
-      const toolName = (tool as { name?: string }).name || id;
-      const toolDesc = (tool as { description?: string }).description || '';
+    if (!toolConfigsData?.tools) return [];
+    return toolConfigsData.tools.map(tc => {
+      const enabled = tc.enabled;
+      const label = enabled ? tc.name : `${tc.name} (已禁用)`;
+      const description = enabled ? tc.description : `${tc.description} [已禁用]`;
       return {
-        value: id,
-        label: enabled ? toolName : `${toolName} (已禁用)`,
-        description: enabled ? toolDesc : `${toolDesc} [已禁用]`,
+        value: tc.id,
+        label,
+        description,
       };
     });
-  }, [tools, toolEnabledMap]);
+  }, [toolConfigsData]);
 
   const getOriginalDescription = (id: string): string => {
     const option = options.find(opt => opt.value === id);

@@ -1,7 +1,7 @@
 {
   "list": {
     "title": "工具配置",
-    "subtitle": "管理投研工具的元数据、分类与启用状态",
+    "subtitle": "管理投研工具的元数据、执行配置与启用状态",
     "create": "新建工具",
     "deleteConfirm": "确定删除工具「{{name}}」吗？",
     "empty": "还没有工具配置，点击「新建工具」创建一个吧",
@@ -15,7 +15,11 @@
     "custom": "自定义",
     "enabled": "已启用",
     "disabled": "已禁用",
-    "noMatch": "没有匹配的工具"
+    "noMatch": "没有匹配的工具",
+    "testButton": "测试",
+    "typeBuiltin": "内置",
+    "typeHttp": "HTTP",
+    "typeMcp": "MCP"
   },
   "categories": {
     "market-data": "行情数据",
@@ -37,14 +41,19 @@
     "description": "工具描述",
     "descriptionPlaceholder": "描述工具的功能和用途...",
     "category": "分类",
+    "type": "执行类型",
+    "typeHint": "选择工具的执行方式",
+    "typeBuiltin": "内置工具（代码实现）",
+    "typeHttp": "HTTP 请求",
+    "typeMcp": "MCP 远程工具",
     "enabled": "启用",
     "enabledHint": "禁用后 Agent 将无法使用此工具",
     "inputSchema": "输入参数 Schema (JSON)",
     "inputSchemaPlaceholder": "{ \"type\": \"object\", \"properties\": { ... } }",
     "outputSchema": "输出参数 Schema (JSON)",
     "outputSchemaPlaceholder": "{ \"type\": \"object\", \"properties\": { ... } }",
-    "config": "额外配置 (JSON)",
-    "configPlaceholder": "{ \"timeout\": 10000 }",
+    "config": "执行配置 (JSON)",
+    "configPlaceholder": "根据执行类型填写对应配置",
     "save": "保存",
     "cancel": "取消",
     "saving": "保存中...",
@@ -52,9 +61,19 @@
     "saveFailed": "保存失败: {{error}}",
     "invalidJson": "JSON 格式无效",
     "builtinNotDeletable": "内置工具不可删除",
-    "metadataOnlyHint": "自定义工具仅保存元数据配置（名称、描述、分类）。工具的实际执行逻辑需要在后端代码中实现并注册到 toolRegistry 后才能被 Agent 调用。",
-    "metadataOnlyBadge": "仅元数据",
     "builtinReadOnlyFields": "内置工具的 Schema 和描述由代码定义，修改仅供参考，不会影响工具实际行为。",
-    "builtinFieldsLocked": "内置工具的 Schema 由代码定义，此处不可编辑"
+    "builtinFieldsLocked": "内置工具的 Schema 由代码定义，此处不可编辑",
+    "httpConfigHint": "HTTP 工具配置: url, method, headers, queryParams, bodyTemplate, timeoutMs, responsePath",
+    "mcpConfigHint": "MCP 工具配置: serverUrl, serverName, remoteToolName, authToken"
+  },
+  "test": {
+    "title": "测试工具",
+    "inputPlaceholder": "输入测试参数 (JSON)...",
+    "run": "执行测试",
+    "running": "执行中...",
+    "result": "执行结果",
+    "error": "执行出错",
+    "success": "执行成功",
+    "emptyInput": "请输入 JSON 格式的测试参数"
   }
 }

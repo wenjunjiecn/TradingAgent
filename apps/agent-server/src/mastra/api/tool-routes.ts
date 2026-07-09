@@ -1,4 +1,5 @@
 import type { ApiRoute } from '@mastra/core/server';
+import { z } from 'zod';
 import {
   CreateToolConfigInputSchema,
   ToolConfigSchema,
@@ -10,11 +11,12 @@ import {
   updateToolConfig,
   deleteToolConfig,
 } from '../tools/tool-config-store';
+import { executeToolDirect } from '../tools/tool-factory';
 
 /**
  * 工具配置 REST API 路由
  *
- * 暴露工具配置的 CRUD 端点，供前端 Desktop 应用调用。
+ * 暴露工具配置的 CRUD 端点和工具测试端点，供前端 Desktop 应用调用。
  * 所有路由以 /api 为前缀（Mastra 默认 apiPrefix）。
  */
 
@@ -115,6 +117,42 @@ const deleteToolRoute: ApiRoute = {
   },
 };
 
+// ── 工具测试端点 ─────────────────────────────────────────────────────
+
+const TestToolInputSchema = z.object({
+  input: z.record(z.any()).default({}),
+});
+
+const testToolRoute: ApiRoute = {
+  path: '/research/tools/:id/test',
+  method: 'POST',
+  handler: async (c: any) => {
+    try {
+      const id = c.req.param('id');
+      const body = await c.req.json().catch(() => ({}));
+      const parseResult = TestToolInputSchema.safeParse(body);
+      if (!parseResult.success) {
+        return c.json({ error: 'Invalid input: expected { input: {...} }' }, 400);
+      }
+
+      const config = await getToolConfig(id);
+      if (!config) {
+        return c.json({ error: 'Tool not found' }, 404);
+      }
+
+      if (!config.enabled) {
+        return c.json({ error: 'Tool is disabled' }, 400);
+      }
+
+      const result = await executeToolDirect(config, parseResult.data.input);
+      return c.json({ result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return c.json({ error: message }, 500);
+    }
+  },
+};
+
 // ── 导出所有 Tool 路由 ───────────────────────────────────────────────
 
 export const toolRoutes: ApiRoute[] = [
@@ -123,4 +161,5 @@ export const toolRoutes: ApiRoute[] = [
   createToolRoute,
   updateToolRoute,
   deleteToolRoute,
+  testToolRoute,
 ];

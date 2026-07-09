@@ -9,12 +9,14 @@ import {
   Loader2,
   Power,
   AlertCircle,
+  FlaskConical,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ToolConfig, ToolCategory } from '@trading-agent/shared';
 import { useToolConfigs, useDeleteTool, useUpdateTool } from '@/lib/tool-api';
 import { ToolEditDialog } from './ToolEditDialog';
+import { ToolTestPanel } from './ToolTestPanel';
 
 // ── 分类图标映射 ──────────────────────────────────────────────────────
 const CATEGORY_COLORS: Record<ToolCategory, string> = {
@@ -23,6 +25,13 @@ const CATEGORY_COLORS: Record<ToolCategory, string> = {
   'news-sentiment': 'text-orange-400 bg-orange-500/10 border-orange-500/20',
   'fundamentals': 'text-green-400 bg-green-500/10 border-green-500/20',
   'custom': 'text-neutral4 bg-surface4 border-border1',
+};
+
+// ── 工具类型标签颜色 ──────────────────────────────────────────────────
+const TYPE_BADGE_COLORS: Record<string, string> = {
+  builtin: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+  http: 'text-green-400 bg-green-500/10 border-green-500/20',
+  mcp: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
 };
 
 export default function Tools() {
@@ -34,6 +43,7 @@ export default function Tools() {
   const [search, setSearch] = useState('');
   const [editTool, setEditTool] = useState<ToolConfig | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [testTool, setTestTool] = useState<ToolConfig | null>(null);
 
   const tools = toolsData?.tools ?? [];
 
@@ -140,6 +150,7 @@ export default function Tools() {
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {filteredTools.map(tool => {
             const categoryColor = CATEGORY_COLORS[tool.category] ?? CATEGORY_COLORS.custom;
+            const typeBadgeColor = TYPE_BADGE_COLORS[tool.type ?? 'builtin'] ?? TYPE_BADGE_COLORS.builtin;
             return (
               <div
                 key={tool.id}
@@ -159,15 +170,14 @@ export default function Tools() {
                           {t('tools:list.builtin')}
                         </span>
                       ) : (
-                        <>
-                          <span className="shrink-0 rounded border border-accent1/30 bg-accent1/10 px-1.5 py-0.5 text-[10px] font-medium text-accent1">
-                            {t('tools:list.custom')}
-                          </span>
-                          <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
-                            {t('tools:edit.metadataOnlyBadge')}
-                          </span>
-                        </>
+                        <span className="shrink-0 rounded border border-accent1/30 bg-accent1/10 px-1.5 py-0.5 text-[10px] font-medium text-accent1">
+                          {t('tools:list.custom')}
+                        </span>
                       )}
+                      {/* 工具类型标签 */}
+                      <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${typeBadgeColor}`}>
+                        {t(`tools:list.type${(tool.type ?? 'builtin').charAt(0).toUpperCase()}${(tool.type ?? 'builtin').slice(1)}`)}
+                      </span>
                     </div>
                     <p className="mt-0.5 line-clamp-2 text-xs text-neutral3">
                       {tool.description || '—'}
@@ -208,6 +218,16 @@ export default function Tools() {
                     <Pencil className="mr-1 size-3.5" />
                     {t('tools:list.editButton')}
                   </Button>
+                  {/* 测试按钮 */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTestTool(tool)}
+                    disabled={!tool.enabled}
+                  >
+                    <FlaskConical className="mr-1 size-3.5" />
+                    {t('tools:list.testButton')}
+                  </Button>
                   {!tool.isBuiltin && (
                     <Button
                       variant="outline"
@@ -236,6 +256,13 @@ export default function Tools() {
         <ToolEditDialog
           tool={editTool}
           onClose={() => setEditTool(null)}
+        />
+      )}
+      {/* 测试面板 */}
+      {testTool && (
+        <ToolTestPanel
+          tool={testTool}
+          onClose={() => setTestTool(null)}
         />
       )}
     </PageLayout>

@@ -3,7 +3,7 @@ import { Loader2, Save, X, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@mastra/playground-ui/utils/toast';
-import type { ToolConfig, ToolCategory, CreateToolConfigInput } from '@trading-agent/shared';
+import type { ToolConfig, ToolCategory, ToolType, CreateToolConfigInput } from '@trading-agent/shared';
 import { useCreateTool, useUpdateTool } from '@/lib/tool-api';
 
 interface ToolEditDialogProps {
@@ -19,11 +19,31 @@ const CATEGORIES: ToolCategory[] = [
   'custom',
 ];
 
-function tryParseJson(str: string | undefined): string | undefined {
+const TOOL_TYPES: ToolType[] = ['builtin', 'http', 'mcp'];
+
+/** HTTP 工具默认配置模板 */
+const DEFAULT_HTTP_CONFIG = {
+  url: '',
+  method: 'GET',
+  headers: {},
+  queryParams: {},
+  bodyTemplate: '',
+  timeoutMs: 12000,
+  responsePath: '',
+};
+
+/** MCP 工具默认配置模板 */
+const DEFAULT_MCP_CONFIG = {
+  serverUrl: '',
+  serverName: '',
+  remoteToolName: '',
+  authToken: '',
+};
+
+function tryParseJson(str: string | undefined): Record<string, any> | undefined {
   if (!str || !str.trim()) return undefined;
   try {
-    JSON.parse(str);
-    return str.trim();
+    return JSON.parse(str);
   } catch {
     return null; // invalid
   }
@@ -42,6 +62,7 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<ToolCategory>('custom');
+  const [type, setType] = useState<ToolType>('http');
   const [enabled, setEnabled] = useState(true);
   const [inputSchema, setInputSchema] = useState('');
   const [outputSchema, setOutputSchema] = useState('');
@@ -55,22 +76,39 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
       setName(tool.name);
       setDescription(tool.description);
       setCategory(tool.category);
+      setType(tool.type ?? 'builtin');
       setEnabled(tool.enabled);
-      setInputSchema(tool.inputSchema ?? '');
-      setOutputSchema(tool.outputSchema ?? '');
+      setInputSchema(tool.inputSchema ? JSON.stringify(tool.inputSchema, null, 2) : '');
+      setOutputSchema(tool.outputSchema ? JSON.stringify(tool.outputSchema, null, 2) : '');
       setConfig(tool.config ? JSON.stringify(tool.config, null, 2) : '');
     } else {
+      // 新建默认值
       setId('');
       setName('');
       setDescription('');
       setCategory('custom');
+      setType('http');
       setEnabled(true);
       setInputSchema('');
       setOutputSchema('');
-      setConfig('');
+      setConfig(JSON.stringify(DEFAULT_HTTP_CONFIG, null, 2));
     }
     setJsonErrors({});
   }, [tool]);
+
+  // 当 type 变化时（仅新建模式），更新默认 config
+  const handleTypeChange = (newType: ToolType) => {
+    setType(newType);
+    if (!isEditing) {
+      if (newType === 'http') {
+        setConfig(JSON.stringify(DEFAULT_HTTP_CONFIG, null, 2));
+      } else if (newType === 'mcp') {
+        setConfig(JSON.stringify(DEFAULT_MCP_CONFIG, null, 2));
+      } else {
+        setConfig('{}');
+      }
+    }
+  };
 
   const validateJsonField = (field: string, value: string): boolean => {
     if (!value.trim()) return true; // 空值合法
@@ -107,14 +145,7 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
 
     const parsedInputSchema = tryParseJson(inputSchema);
     const parsedOutputSchema = tryParseJson(outputSchema);
-    let parsedConfig: Record<string, any> | undefined;
-    if (config.trim()) {
-      try {
-        parsedConfig = JSON.parse(config);
-      } catch {
-        // already validated above
-      }
-    }
+    const parsedConfig = tryParseJson(config);
 
     try {
       if (isEditing) {
@@ -124,12 +155,13 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
             name: name.trim(),
             description: description.trim(),
             category,
+            type,
             enabled,
             // 内置工具的 Schema 字段由代码定义，不发送更新
             ...(isBuiltin ? {} : {
               inputSchema: parsedInputSchema,
               outputSchema: parsedOutputSchema,
-              config: parsedConfig,
+              config: parsedConfig ?? {},
             }),
           },
         });
@@ -139,6 +171,7 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
           name: name.trim(),
           description: description.trim(),
           category,
+          type,
           enabled,
           inputSchema: parsedInputSchema,
           outputSchema: parsedOutputSchema,
@@ -165,6 +198,9 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
       hasError ? 'border-red-500 focus:border-red-500' : 'border-border1 focus:border-accent1'
     }`;
 
+  // 内置工具类型不可更改
+  const typeDisabled = isBuiltin;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -190,14 +226,6 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
 
         {/* 表单内容 */}
         <div className="space-y-4 p-5">
-          {/* 新建工具时显示仅元数据提示 */}
-          {!isEditing && (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-400">
-              <AlertCircle className="mt-0.5 size-4 shrink-0" />
-              <span>{t('tools:edit.metadataOnlyHint')}</span>
-            </div>
-          )}
-
           {/* 编辑内置工具时显示提示 */}
           {isEditing && isBuiltin && (
             <div className="flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 text-xs text-blue-400">
@@ -252,7 +280,7 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
             />
           </div>
 
-          {/* Category + Enabled */}
+          {/* Category + Type */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-neutral3">
@@ -272,24 +300,44 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-neutral3">
-                {t('tools:edit.enabled')}
+                {t('tools:edit.type')}
               </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEnabled(!enabled)}
-                  className={`relative h-6 w-11 rounded-full transition-colors ${
-                    enabled ? 'bg-accent1' : 'bg-surface4'
+              <select
+                value={type}
+                onChange={e => handleTypeChange(e.target.value as ToolType)}
+                disabled={typeDisabled}
+                className={`w-full rounded border border-border1 bg-surface2 px-2 py-2 text-sm text-neutral5 focus:border-accent1 focus:outline-none ${typeDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
+              >
+                {TOOL_TYPES.map(tp => (
+                  <option key={tp} value={tp}>
+                    {t(`tools:edit.type${tp.charAt(0).toUpperCase()}${tp.slice(1)}`)}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-0.5 text-[10px] text-neutral4">{t('tools:edit.typeHint')}</p>
+            </div>
+          </div>
+
+          {/* Enabled toggle */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral3">
+              {t('tools:edit.enabled')}
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEnabled(!enabled)}
+                className={`relative h-6 w-11 rounded-full transition-colors ${
+                  enabled ? 'bg-accent1' : 'bg-surface4'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 size-5 rounded-full bg-white transition-transform ${
+                    enabled ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
-                >
-                  <span
-                    className={`absolute top-0.5 size-5 rounded-full bg-white transition-transform ${
-                      enabled ? 'translate-x-5' : 'translate-x-0.5'
-                    }`}
-                  />
-                </button>
-                <span className="text-xs text-neutral4">{t('tools:edit.enabledHint')}</span>
-              </div>
+                />
+              </button>
+              <span className="text-xs text-neutral4">{t('tools:edit.enabledHint')}</span>
             </div>
           </div>
 
@@ -341,7 +389,7 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
             )}
           </div>
 
-          {/* Config */}
+          {/* Execution Config */}
           <div>
             <label className="mb-1 block text-xs font-medium text-neutral3">
               {t('tools:edit.config')}
@@ -352,13 +400,19 @@ export function ToolEditDialog({ tool, onClose }: ToolEditDialogProps) {
                 setConfig(e.target.value);
                 setJsonErrors(prev => ({ ...prev, config: false }));
               }}
-              rows={3}
+              rows={6}
               disabled={isBuiltin}
               placeholder={t('tools:edit.configPlaceholder')}
               className={`${jsonTextareaClass(jsonErrors.config)} ${isBuiltin ? 'cursor-not-allowed opacity-60' : ''}`}
             />
             {jsonErrors.config && (
               <p className="mt-0.5 text-[10px] text-red-400">{t('tools:edit.invalidJson')}</p>
+            )}
+            {!isBuiltin && type === 'http' && (
+              <p className="mt-0.5 text-[10px] text-neutral4">{t('tools:edit.httpConfigHint')}</p>
+            )}
+            {!isBuiltin && type === 'mcp' && (
+              <p className="mt-0.5 text-[10px] text-neutral4">{t('tools:edit.mcpConfigHint')}</p>
             )}
             {isBuiltin && (
               <p className="mt-0.5 text-[10px] text-neutral4">{t('tools:edit.builtinFieldsLocked')}</p>
