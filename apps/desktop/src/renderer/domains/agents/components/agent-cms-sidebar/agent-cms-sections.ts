@@ -25,9 +25,14 @@ export const AGENT_CMS_SECTIONS: AgentCmsSection[] = [
 export function getCodeAgentOverrideSections(editorConfig?: AgentEditorConfig): AgentCmsSection[] {
   if (editorConfig === false) return [];
 
+  // When editorConfig is undefined (unset), the code agent is fully editable —
+  // the legacy default. Return all sections so the edit page matches the create
+  // page's configuration options.
+  if (editorConfig === undefined) return AGENT_CMS_SECTIONS;
+
   const sections = AGENT_CMS_SECTIONS.filter(section => {
-    if (section.name === 'Instructions') return editorConfig?.instructions !== false;
-    if (section.name === 'Tools') return editorConfig?.tools !== false;
+    if (section.name === 'Instructions') return editorConfig.instructions !== false;
+    if (section.name === 'Tools') return editorConfig.tools !== false;
     return section.name === 'Variables';
   });
 

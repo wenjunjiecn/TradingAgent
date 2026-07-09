@@ -144,8 +144,9 @@ export function useAgentCmsForm(options: UseAgentCmsFormOptions) {
 
   const buildSharedParams = useCallback(
     async (values: AgentFormValues) => {
-      // Code agent overrides: only send fields that are editable (instructions, tools, variables)
-      if (isCodeAgentOverride) {
+      // Code agent overrides with explicit editor config: only send fields that are editable (instructions, tools, variables)
+      // When editorConfig is undefined, the code agent is fully editable and falls through to the general path below.
+      if (isCodeAgentOverride && editorConfig !== undefined) {
         // Collect all MCP tool names
         const mcpToolNames = new Set<string>();
         for (const c of values.mcpClients ?? []) {
@@ -245,7 +246,7 @@ export function useAgentCmsForm(options: UseAgentCmsFormOptions) {
         requestContextSchema: values.variables ? Object.fromEntries(Object.entries(values.variables)) : undefined,
       };
     },
-    [isEdit, isCodeAgentOverride, ownsInstructions, ownsTools, ownsToolDescriptions, client],
+    [isEdit, isCodeAgentOverride, editorConfig, ownsInstructions, ownsTools, ownsToolDescriptions, client],
   );
 
   const buildMemoryParams = useCallback((values: AgentFormValues) => {
@@ -284,7 +285,9 @@ export function useAgentCmsForm(options: UseAgentCmsFormOptions) {
 
       try {
         const sharedParams = await buildSharedParams(values);
-        const editMemory = isCodeAgentOverride ? undefined : buildMemoryParams(values);
+        // When editorConfig is undefined, the code agent is fully editable — send memory params.
+        const isRestrictedCodeAgent = isCodeAgentOverride && editorConfig !== undefined;
+        const editMemory = isRestrictedCodeAgent ? undefined : buildMemoryParams(values);
 
         if (needsCreate) {
           // First save for a code agent — create the stored override
@@ -307,12 +310,12 @@ export function useAgentCmsForm(options: UseAgentCmsFormOptions) {
         // Pass keepDefaultValues so currently rendered field state (e.g. open tabs,
         // focused inputs) is preserved — only the dirty flag is cleared.
         form.reset(values, { keepValues: true });
-        // For code-mode overrides we intentionally skip stored-agent / agent query
-        // invalidation: the dataSource reload would cascade through the
-        // resetFormWithData effect and remount the System Prompt tab, which
+        // For code-mode overrides with explicit editor config, we intentionally skip
+        // stored-agent / agent query invalidation: the dataSource reload would cascade
+        // through the resetFormWithData effect and remount the System Prompt tab, which
         // is jarring. The filesystem write is authoritative for code mode and
         // the in-memory form already reflects the saved state.
-        if (!isCodeAgentOverride) {
+        if (!isRestrictedCodeAgent) {
           void queryClient.invalidateQueries({ queryKey: ['agent-versions', agentId] });
           void queryClient.invalidateQueries({ queryKey: ['stored-agent', agentId] });
           void queryClient.invalidateQueries({ queryKey: ['agent', agentId] });
@@ -363,7 +366,7 @@ export function useAgentCmsForm(options: UseAgentCmsFormOptions) {
           } else if (needsCreate) {
             // First publish for a code agent — create and immediately publish
             const sharedParams = await buildSharedParams(values);
-            const editMemory = isCodeAgentOverride ? undefined : buildMemoryParams(values);
+            const editMemory = isCodeAgentOverride && editorConfig !== undefined ? undefined : buildMemoryParams(values);
             const createParams: CreateStoredAgentParams = {
               id: options.agentId,
               ...sharedParams,
@@ -520,8 +523,10 @@ export function useAgentCmsForm(options: UseAgentCmsFormOptions) {
   const watched = useWatch({ control: form.control });
 
   const canPublish = useMemo(() => {
-    if (isCodeAgentOverride) {
-      // Code agent overrides only need instructions to be filled
+    // Code agent overrides with explicit editor config only need instructions to be filled.
+    // When editorConfig is undefined, the code agent is fully editable and requires
+    // the same validation as a non-code agent (identity + instructions).
+    if (isCodeAgentOverride && editorConfig !== undefined) {
       const instructionsDone = (watched.instructionBlocks ?? []).some(
         b =>
           b.type === 'prompt_block_ref' ||
@@ -536,7 +541,7 @@ export function useAgentCmsForm(options: UseAgentCmsFormOptions) {
         (b.type === 'prompt_block' && typeof b.content === 'string' && b.content.trim()),
     );
     return identityDone && instructionsDone;
-  }, [isCodeAgentOverride, watched.name, watched.model?.provider, watched.model?.name, watched.instructionBlocks]);
+  }, [isCodeAgentOverride, editorConfig, watched.name, watched.model?.provider, watched.model?.name, watched.instructionBlocks]);
 
   const isDirty = form.formState.isDirty;
 

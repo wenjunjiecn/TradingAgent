@@ -160,19 +160,17 @@ function EditLayoutWrapper() {
 
   // Redirect code agent overrides away from non-editable sections.
   const basePath = `/cms/agents/${agentId}/edit`;
-  const isOnIdentityPage = pathname === basePath || pathname === `${basePath}/`;
   useEffect(() => {
     if (!isCodeAgentOverride || codeAgentOverrideSections.length === 0) return;
 
     const isAllowedPath = codeAgentOverrideSections.some(section => pathname === `${basePath}${section.pathSuffix}`);
-    if (isOnIdentityPage || !isAllowedPath) {
+    if (!isAllowedPath) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       routerNavigate(`${basePath}${codeAgentOverrideSections[0].pathSuffix}${search}${hash}`, { replace: true });
     }
   }, [
     codeAgentOverrideSections,
     isCodeAgentOverride,
-    isOnIdentityPage,
     pathname,
     routerNavigate,
     basePath,
