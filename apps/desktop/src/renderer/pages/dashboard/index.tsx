@@ -158,7 +158,7 @@ function RecentReportsPanel({ reports, isLoading }: { reports: ReportSummary[]; 
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border1 bg-surface3 p-4">
+    <div className="flex flex-col gap-3 overflow-hidden rounded-xl border border-border1 bg-surface3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-sm font-semibold text-neutral6">{t('recentReports.title')}</h3>
         <Button variant="ghost" size="sm" onClick={() => navigate('/reports')}>
@@ -184,7 +184,7 @@ function RecentReportsPanel({ reports, isLoading }: { reports: ReportSummary[]; 
             >
               <button
                 type="button"
-                className="flex flex-1 items-center gap-3 text-left"
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
                 onClick={() => navigate(`/reports/${report.id}`)}
               >
                 <div className="flex w-14 shrink-0 flex-col">
