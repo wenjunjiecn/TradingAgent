@@ -1,7 +1,7 @@
 {
   "sections": {
     "research": "投研",
-    "system": "系统"
+    "system": "配置"
   },
   "items": {
     "dashboard": "投研看板",
@@ -9,9 +9,9 @@
     "agentTeam": "Agent Team",
     "reports": "投研报告",
     "marketData": "行情数据",
-    "agentConfig": "Agent配置",
-    "tools": "工具配置",
-    "skills": "技能配置",
+    "agentConfig": "Agent",
+    "tools": "工具",
+    "skills": "技能",
     "settings": "Settings"
   }
 }

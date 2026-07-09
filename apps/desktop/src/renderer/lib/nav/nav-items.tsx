@@ -44,13 +44,6 @@ export const mainNav: NavSection[] = [
         activePaths: ['/collaboration'],
       },
       {
-        name: 'nav:items.agentTeam',
-        url: '/teams',
-        Icon: UsersRound,
-        isOnMastraPlatform: false,
-        activePaths: ['/teams'],
-      },
-      {
         name: 'nav:items.reports',
         url: '/reports',
         Icon: FileText,
@@ -76,6 +69,13 @@ export const mainNav: NavSection[] = [
         url: '/agents',
         Icon: AgentIcon,
         isOnMastraPlatform: true,
+      },
+      {
+        name: 'nav:items.agentTeam',
+        url: '/teams',
+        Icon: UsersRound,
+        isOnMastraPlatform: false,
+        activePaths: ['/teams'],
       },
       {
         name: 'nav:items.tools',
