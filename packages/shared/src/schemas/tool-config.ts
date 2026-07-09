@@ -16,6 +16,7 @@ export const ToolTypeSchema = z.enum([
   'builtin',
   'http',
   'mcp',
+  'code',
 ]).describe('工具执行类型');
 
 /** HTTP 工具配置 */
@@ -44,6 +45,16 @@ export const McpToolConfigSchema = z.object({
   authToken: z.string().optional(),
 });
 
+/** Code 工具配置 */
+export const CodeToolConfigSchema = z.object({
+  /** JavaScript/TypeScript 代码，async function 形式 */
+  code: z.string().describe('异步函数代码, 接收 input 参数, return 返回结果'),
+  /** 运行超时毫秒 */
+  timeoutMs: z.number().default(15000),
+  /** 可选的环境变量注入 */
+  env: z.record(z.string()).optional(),
+});
+
 /** 工具配置 — 存储在 DB 中，管理工具的元数据、执行类型与启用状态 */
 export const ToolConfigSchema = z.object({
   id: z.string().describe('唯一标识符'),
@@ -57,7 +68,7 @@ export const ToolConfigSchema = z.object({
   inputSchema: z.record(z.any()).optional().describe('输入参数 JSON Schema'),
   /** 输出参数 JSON Schema */
   outputSchema: z.record(z.any()).optional().describe('输出参数 JSON Schema'),
-  /** 执行配置 — 根据 type 不同结构不同 (HttpToolConfig / McpToolConfig) */
+  /** 执行配置 — 根据 type 不同结构不同 (HttpToolConfig / McpToolConfig / CodeToolConfig) */
   config: z.record(z.any()).optional().describe('执行配置, 根据 type 不同结构不同'),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -78,3 +89,4 @@ export type ToolConfig = z.infer<typeof ToolConfigSchema>;
 export type CreateToolConfigInput = z.infer<typeof CreateToolConfigInputSchema>;
 export type HttpToolConfig = z.infer<typeof HttpToolConfigSchema>;
 export type McpToolConfig = z.infer<typeof McpToolConfigSchema>;
+export type CodeToolConfig = z.infer<typeof CodeToolConfigSchema>;

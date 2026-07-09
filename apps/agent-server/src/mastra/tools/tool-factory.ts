@@ -1,10 +1,11 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import type { ToolConfig, HttpToolConfig, McpToolConfig } from '@trading-agent/shared';
+import type { ToolConfig, HttpToolConfig, McpToolConfig, CodeToolConfig } from '@trading-agent/shared';
 import { toolRegistry } from './tool-registry';
 import { jsonSchemaToZod } from './json-schema-converter';
 import { executeHttpRequest } from './http-tool-executor';
 import { executeMcpCall } from './mcp-tool-executor';
+import { executeCode } from './code-tool-executor';
 
 /**
  * 工具工厂
@@ -15,6 +16,7 @@ import { executeMcpCall } from './mcp-tool-executor';
  * type=builtin → 从 toolRegistry 取已有实现
  * type=http    → 根据 config 动态构建 fetch 请求
  * type=mcp     → 通过 MCP 协议调用远程工具
+ * type=code    → 执行用户编写的 JavaScript 代码
  */
 
 /**
@@ -34,6 +36,8 @@ export async function createToolFromConfig(
       return createHttpTool(config);
     case 'mcp':
       return createMcpTool(config);
+    case 'code':
+      return createCodeTool(config);
     default:
       console.warn(`[ToolFactory] Unknown tool type: ${(config as any).type}`);
       return null;
@@ -92,6 +96,28 @@ function createMcpTool(config: ToolConfig): Record<string, any> {
   return { [config.id]: tool };
 }
 
+/** Code 工具: 执行用户编写的 JavaScript 代码 */
+function createCodeTool(config: ToolConfig): Record<string, any> {
+  const codeConfig = (config.config ?? {}) as CodeToolConfig;
+  const inputZod = config.inputSchema
+    ? jsonSchemaToZod(config.inputSchema)
+    : z.object({}).passthrough();
+
+  const tool = createTool({
+    id: config.id,
+    description: config.description,
+    inputSchema: inputZod,
+    outputSchema: config.outputSchema
+      ? jsonSchemaToZod(config.outputSchema)
+      : z.any().optional(),
+    execute: async (input: Record<string, any>) => {
+      return executeCode(codeConfig, input);
+    },
+  });
+
+  return { [config.id]: tool };
+}
+
 /**
  * 直接执行工具 (用于测试端点)
  *
@@ -117,6 +143,10 @@ export async function executeToolDirect(
     case 'mcp': {
       const mcpConfig = (config.config ?? {}) as McpToolConfig;
       return executeMcpCall(mcpConfig, input);
+    }
+    case 'code': {
+      const codeConfig = (config.config ?? {}) as CodeToolConfig;
+      return executeCode(codeConfig, input);
     }
     default:
       throw new Error(`Unknown tool type: ${(config as any).type}`);
