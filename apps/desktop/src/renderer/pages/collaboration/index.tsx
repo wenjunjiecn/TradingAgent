@@ -140,15 +140,15 @@ function CollaborationProgress({
     { label: t('progress.step3.label'), desc: t('progress.step3.desc') },
   ];
 
+  const isRunning = state === 'running';
+  const isSuccess = state === 'success';
+  const isError = state === 'error';
+
   return (
     <div className="rounded-xl border border-border1 bg-surface3 p-4">
       <h3 className="font-display text-sm font-semibold text-neutral6 mb-3">{t('progress.title')}</h3>
       <div className="flex flex-col gap-3">
         {steps.map((step, i) => {
-          const isRunning = state === 'running';
-          const isSuccess = state === 'success';
-          const isError = state === 'error';
-
           return (
             <div key={i} className="flex items-center gap-3">
               <div className="shrink-0">
