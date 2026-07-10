@@ -208,7 +208,7 @@ export default function ReportDetailPage() {
         </div>
       )}
 
-      {/* 报告追问 Chat */}
+      {/* 报告追问 Chat — 右下角悬浮框 */}
       {report.id && <ReportFollowUpChat reportId={report.id} />}
     </PageLayout>
   );

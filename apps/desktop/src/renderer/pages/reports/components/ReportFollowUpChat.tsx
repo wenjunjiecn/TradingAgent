@@ -1,17 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ArrowUp, MessageCircle } from 'lucide-react';
+import { ArrowUp, MessageCircle, X } from 'lucide-react';
 import { Button } from '@mastra/playground-ui/components/Button';
 import { ScrollArea } from '@mastra/playground-ui/components/ScrollArea';
 import { PendingIndicator } from '@mastra/playground-ui/components/PendingIndicator';
 import { MarkdownRenderer } from '@mastra/playground-ui/components/MarkdownRenderer';
 import { useAutoscroll } from '@mastra/playground-ui/hooks/use-autoscroll';
-import { cn } from '@mastra/playground-ui/utils/cn';
 
 /**
  * 报告追问 Chat 组件
  *
- * 嵌入报告详情页底部，允许用户基于报告内容流式追问 Supervisor。
- * 样式匹配 Agent Chat 的 Thread / MessageRow / Composer。
+ * 以右下角悬浮框形式呈现，允许用户基于报告内容流式追问 Supervisor。
+ * 折叠时显示圆形气泡按钮，展开后显示完整聊天面板。
  */
 
 interface ChatMessage {
@@ -60,10 +59,19 @@ export function ReportFollowUpChat({ reportId }: { reportId: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const areaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useAutoscroll(areaRef, { enabled: true });
+
+  // 展开时自动聚焦输入框
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => textareaRef.current?.focus(), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
@@ -143,117 +151,151 @@ export function ReportFollowUpChat({ reportId }: { reportId: string }) {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col border-t border-border1 pt-4">
-      {/* 标题 */}
-      <div className="flex items-center gap-2 px-4">
-        <MessageCircle className="size-4 text-accent1" />
-        <h3 className="font-display text-sm font-semibold text-neutral6">追问与讨论</h3>
-        <span className="text-xs text-neutral3">基于此报告内容与 Supervisor 对话</span>
-      </div>
+    <>
+      {/* ── 折叠态：右下角悬浮按钮 ── */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-accent1 text-white shadow-lg shadow-accent1/30 transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-accent1/40 active:scale-95"
+          aria-label="追问与讨论"
+        >
+          <MessageCircle className="size-6" />
+          {messages.length > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              {messages.length}
+            </span>
+          )}
+        </button>
+      )}
 
-      {/* 消息列表 — 匹配 Thread 布局 */}
-      <div className="grid grid-rows-[1fr_auto] max-h-[60vh] overflow-hidden">
-        <div ref={areaRef} className="overflow-y-scroll" style={{ overflowAnchor: 'none' }}>
-          {isEmpty ? (
-            <div className="flex w-full flex-col items-center pt-8 pb-4">
-              <p className="text-sm text-neutral3">向 Supervisor 追问关于此报告的任何问题</p>
+      {/* ── 展开态：悬浮聊天面板 ── */}
+      {isOpen && (
+        <div className="fixed bottom-6 right-6 z-50 flex h-[520px] w-[400px] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-border1 bg-surface1 shadow-2xl shadow-black/20">
+          {/* 面板头部 */}
+          <div className="flex items-center justify-between border-b border-border1 bg-surface2 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="size-4 text-accent1" />
+              <h3 className="font-display text-sm font-semibold text-neutral6">追问与讨论</h3>
+              <span className="text-xs text-neutral3">基于此报告与 Supervisor 对话</span>
             </div>
-          ) : (
-            <div className="relative max-w-3xl w-full mx-auto px-4 pb-3">
-              <div className="flex flex-col gap-6 py-4">
-                {messages.map((msg, i) => {
-                  if (msg.role === 'user') {
+            <button
+              onClick={() => setIsOpen(false)}
+              className="rounded-md p-1 text-neutral3 transition-colors hover:bg-surface3 hover:text-neutral6"
+              aria-label="关闭"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+
+          {/* 消息列表 */}
+          <div ref={areaRef} className="flex-1 overflow-y-scroll" style={{ overflowAnchor: 'none' }}>
+            {isEmpty ? (
+              <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                <MessageCircle className="mb-3 size-10 text-neutral4" />
+                <p className="text-sm text-neutral3">
+                  向 Supervisor 追问关于此报告的任何问题
+                </p>
+                <p className="mt-1 text-xs text-neutral4">
+                  如「风险部分能详细说说吗？」
+                </p>
+              </div>
+            ) : (
+              <div className="relative w-full px-4 pb-3">
+                <div className="flex flex-col gap-4 py-4">
+                  {messages.map((msg, i) => {
+                    if (msg.role === 'user') {
+                      return (
+                        <div key={i} className="flex w-full flex-col items-end pt-1 pb-2">
+                          <div className="max-w-[85%] break-words rounded-xl bg-surface3 px-3.5 py-2 text-ui-lg leading-ui-lg text-neutral6">
+                            {msg.content}
+                          </div>
+                        </div>
+                      );
+                    }
                     return (
-                      <div key={i} className="w-full flex items-end pb-4 pt-2 flex-col">
-                        <div className="max-w-[max(366px,70%)] break-words px-4 py-2 text-neutral6 text-ui-lg leading-ui-lg rounded-xl bg-surface3">
-                          {msg.content}
+                      <div key={i} className="max-w-full">
+                        <div className="pt-1 text-ui-lg leading-ui-lg text-neutral6">
+                          {msg.content ? (
+                            <MarkdownRenderer>{msg.content}</MarkdownRenderer>
+                          ) : (
+                            <span className="text-neutral3">...</span>
+                          )}
                         </div>
                       </div>
                     );
-                  }
-                  return (
-                    <div key={i} className="max-w-full">
-                      <div className="text-neutral6 text-ui-lg leading-ui-lg pt-2">
-                        {msg.content ? (
-                          <MarkdownRenderer>{msg.content}</MarkdownRenderer>
-                        ) : (
-                          <span className="text-neutral3">...</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                {isStreaming && <PendingIndicator />}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Composer — 匹配 Agent Chat 样式 */}
-        <div className="relative px-2 pb-2">
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              handleSend();
-            }}
-          >
-            <div
-              className="relative overflow-hidden bg-surface3 rounded-[22px] border border-border2/40 max-w-3xl w-full mx-auto transition-colors duration-normal focus-within:border-border2"
-              onClick={e => {
-                if (e.target === e.currentTarget) textareaRef.current?.focus();
-              }}
-            >
-              <div className="relative z-10">
-                <ScrollArea maxHeight="120px">
-                  <textarea
-                    ref={textareaRef}
-                    value={input}
-                    autoFocus={false}
-                    className="field-sizing-content min-h-14 w-full text-ui-lg leading-ui-lg placeholder:text-neutral3 text-neutral6 bg-transparent focus:outline-hidden resize-none outline-hidden disabled:cursor-not-allowed disabled:opacity-50 px-3 pt-3 pb-2"
-                    placeholder="基于此报告追问，如「风险部分能详细说说吗？」"
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.nativeEvent.isComposing || e.keyCode === 229) return;
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        if (isStreaming) return;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSend();
-                      }
-                    }}
-                    disabled={isStreaming}
-                  />
-                </ScrollArea>
-                {/* Action Row */}
-                <div className="flex flex-wrap-reverse justify-end items-center gap-2 px-1.5 pb-1.5">
-                  {isStreaming ? (
-                    <Button
-                      variant="default"
-                      size="icon-md"
-                      type="button"
-                      tooltip="停止"
-                      onClick={handleStop}
-                    >
-                      <CircleStopIcon />
-                    </Button>
-                  ) : (
-                    <Button
-                      type="submit"
-                      variant="default"
-                      size="icon-md"
-                      tooltip="发送"
-                      className="rounded-full border border-border1 bg-surface5"
-                      disabled={!input.trim()}
-                    >
-                      <ArrowUp className="h-6 w-6 text-neutral3 hover:text-neutral6" />
-                    </Button>
-                  )}
+                  })}
+                  {isStreaming && <PendingIndicator />}
                 </div>
               </div>
-            </div>
-          </form>
+            )}
+          </div>
+
+          {/* 输入区 */}
+          <div className="border-t border-border1 bg-surface2 p-2.5">
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                handleSend();
+              }}
+            >
+              <div
+                className="relative overflow-hidden rounded-[18px] border border-border2/40 bg-surface3 transition-colors duration-normal focus-within:border-border2"
+                onClick={e => {
+                  if (e.target === e.currentTarget) textareaRef.current?.focus();
+                }}
+              >
+                <div className="relative z-10">
+                  <ScrollArea maxHeight="100px">
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      autoFocus={false}
+                      className="field-sizing-content min-h-11 w-full resize-none bg-transparent px-3 pt-2.5 pb-1.5 text-ui-lg leading-ui-lg text-neutral6 placeholder:text-neutral3 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="基于此报告追问..."
+                      onChange={e => setInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          if (isStreaming) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSend();
+                        }
+                      }}
+                      disabled={isStreaming}
+                    />
+                  </ScrollArea>
+                  {/* 操作行 */}
+                  <div className="flex flex-wrap-reverse items-center justify-end gap-2 px-1.5 pb-1.5">
+                    {isStreaming ? (
+                      <Button
+                        variant="default"
+                        size="icon-md"
+                        type="button"
+                        tooltip="停止"
+                        onClick={handleStop}
+                      >
+                        <CircleStopIcon />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="submit"
+                        variant="default"
+                        size="icon-md"
+                        tooltip="发送"
+                        className="rounded-full border border-border1 bg-surface5"
+                        disabled={!input.trim()}
+                      >
+                        <ArrowUp className="h-5 w-5 text-neutral3 hover:text-neutral6" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
