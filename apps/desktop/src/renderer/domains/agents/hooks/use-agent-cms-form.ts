@@ -242,7 +242,7 @@ export function useAgentCmsForm(options: UseAgentCmsFormOptions) {
         mcpClients: mcpClientsParam,
         scorers: mapScorersToApi(values.scorers),
         skills: values.skills,
-        workspace: values.workspace,
+        workspace: values.workspace && 'type' in values.workspace ? values.workspace : undefined,
         requestContextSchema: values.variables ? Object.fromEntries(Object.entries(values.variables)) : undefined,
       };
     },

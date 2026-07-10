@@ -46,7 +46,7 @@ export function mapAgentResponseToDataSource(agent: GetAgentResponse): AgentData
     // not the stored-skill-config shape the edit form consumes. Code-defined agents
     // have no stored skill overrides, so leave this unset.
     skills: undefined,
-    workspace: agent.workspaceId ? ({ workspaceId: agent.workspaceId } as AgentDataSource['workspace']) : undefined,
+    workspace: agent.workspaceId ? ({ type: 'id', workspaceId: agent.workspaceId } as AgentDataSource['workspace']) : undefined,
     requestContextSchema,
   };
 }
