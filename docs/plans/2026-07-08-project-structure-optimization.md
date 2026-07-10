@@ -283,9 +283,6 @@ rmdir apps/agent-server/src/mastra/public 2>/dev/null || true
 
 # 数据库路径（可选，默认 ./data/mastra.db）
 # MASTRA_DB_URL=file:./data/mastra.db
-
-# Desktop 与 Agent Server 之间的认证 Token（可选，生产打包时使用）
-# TRADING_AGENT_DESKTOP_TOKEN=your-secure-token
 ```
 
 - [ ] **Step 9: 更新 `restart-dev.sh` — 确保 data 目录存在**
@@ -1108,7 +1105,7 @@ git commit -m "feat(dx): add dev:all concurrent script, simplify restart-dev.sh"
 - [ ] `data/` 目录存在且有 `.gitkeep`
 - [ ] `MASTRA_DB_URL` 环境变量可覆盖默认 DB 路径
 - [ ] `npm run dev:agent` 启动后，`data/mastra.db` 被自动创建
-- [ ] `.env.example` 包含 `MASTRA_DB_URL` 和 `TRADING_AGENT_DESKTOP_TOKEN` 说明
+- [ ] `.env.example` 包含 `MASTRA_DB_URL` 说明
 
 ### Phase 2 验收
 - [ ] `npx turbo run build` 能正确按依赖拓扑排序构建

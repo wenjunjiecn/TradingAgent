@@ -6,7 +6,6 @@ import { MastraCompositeStore } from '@mastra/core/storage';
 import { LocalSkillSource, Workspace } from '@mastra/core/workspace';
 import { MastraEditor } from '@mastra/editor';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
-import type { Middleware } from '@mastra/core/server';
 import { loadAllAgents } from './agents/agent-registry';
 import { initTeamConfigStore } from './teams/team-config-store';
 import { findProjectRoot, DB_URL } from './db';
@@ -15,24 +14,15 @@ import { tradingWorkflow } from './workflows/trading-workflow';
 import { researchRoutes } from './api/research-routes';
 import { settingsRoutes } from './api/settings-routes';
 
-const DESKTOP_AUTH_HEADER = 'x-trading-agent-token';
-const desktopAuthToken = process.env.TRADING_AGENT_DESKTOP_TOKEN;
-
 const projectRoot = findProjectRoot(process.env.INIT_CWD ?? process.cwd());
-
-const desktopAuthMiddleware: Middleware = {
-  path: '*',
-  handler: async (c, next) => {
-    return next();
-  },
-};
 
 function resolveCorsOrigin(origin: string): string | null {
   if (origin === 'http://localhost:3000' || origin === 'http://127.0.0.1:3000') {
     return origin;
   }
 
-  if (desktopAuthToken && (origin === 'null' || origin === 'file://')) {
+  // Allow Electron file:// and null origins (production desktop app)
+  if (origin === 'null' || origin === 'file://') {
     return origin;
   }
 
@@ -79,12 +69,11 @@ export const mastra = new Mastra({
     source: 'db',
   }),
   server: {
-    middleware: desktopAuthMiddleware,
     apiRoutes: [...researchRoutes, ...settingsRoutes],
     cors: {
       origin: resolveCorsOrigin,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization', 'x-mastra-client-type', DESKTOP_AUTH_HEADER],
+      allowHeaders: ['Content-Type', 'Authorization', 'x-mastra-client-type'],
       credentials: true
     }
   },

@@ -137,6 +137,5 @@ Copy `.env.example` to `.env` locally and configure:
 - `FINNHUB_API_KEY` (optional) — Finnhub API key for the news/sentiment tool.
 - `MASTRA_PLATFORM_ACCESS_TOKEN` (optional) — Mastra Platform token for cloud observability.
 - `MASTRA_DB_URL` (optional) — LibSQL database URL, defaults to `file:~/.trading-agent/mastra.db`.
-- `TRADING_AGENT_DESKTOP_TOKEN` (optional) — auth token between desktop shell and agent server (auto-generated in dev, set for production packaging).
 
 Never commit `.env`, local database files (`~/.trading-agent/`), Mastra runtime output (`.mastra/`), build artifacts (`dist/`, `dist-electron/`, `dist-app/`), logs, or packaged app archives.

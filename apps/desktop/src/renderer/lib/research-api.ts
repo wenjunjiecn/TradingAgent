@@ -18,14 +18,9 @@ function getApiBase(): string {
 }
 
 function getHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
+  return {
     'Content-Type': 'application/json',
   };
-  const token = window.tradingAgent?.desktopAuthToken;
-  if (token) {
-    headers['x-trading-agent-token'] = token;
-  }
-  return headers;
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {

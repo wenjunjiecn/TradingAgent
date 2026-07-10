@@ -144,7 +144,6 @@ declare global {
     MASTRA_SIGNALS_UI?: string;
     tradingAgent?: {
       platform?: string;
-      desktopAuthToken?: string;
     };
   }
 }
@@ -786,16 +785,7 @@ export default function AppWrapper() {
   const cloudApiEndpoint = window.MASTRA_CLOUD_API_ENDPOINT || '';
   const autoDetectUrl = window.MASTRA_AUTO_DETECT_URL === 'true';
   const endpoint = cloudApiEndpoint || (autoDetectUrl ? window.location.origin : `${protocol}://${host}:${port}`);
-  const defaultHeaders = useMemo<Record<string, string>>(() => {
-    const token = window.tradingAgent?.desktopAuthToken;
-    const headers: Record<string, string> = {};
-
-    if (token) {
-      headers['x-trading-agent-token'] = token;
-    }
-
-    return headers;
-  }, []);
+  const defaultHeaders = useMemo<Record<string, string>>(() => ({}), []);
 
   return (
     <PlaygroundQueryClient>

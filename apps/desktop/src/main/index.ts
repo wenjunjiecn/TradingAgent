@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { spawn, ChildProcess } from 'child_process';
 import * as http from 'http';
-import { randomBytes } from 'crypto';
 import kill from 'tree-kill';
 
 // ── EPIPE 防护 ────────────────────────────────────────────────────────
@@ -40,8 +39,6 @@ let isLoadingScreenActive = false;
 const devProcesses: ChildProcess[] = [];
 const MASTRA_SERVER_HOST = '127.0.0.1';
 const MASTRA_SERVER_PORT = process.env.MASTRA_SERVER_PORT || process.env.PORT || '4111';
-const DESKTOP_AUTH_TOKEN = process.env.TRADING_AGENT_DESKTOP_TOKEN || randomBytes(32).toString('hex');
-process.env.TRADING_AGENT_DESKTOP_TOKEN = DESKTOP_AUTH_TOKEN;
 const MASTRA_API_URL = `http://${MASTRA_SERVER_HOST}:${MASTRA_SERVER_PORT}`;
 const MASTRA_AGENTS_URL = `${MASTRA_API_URL}/api/agents`;
 const RENDERER_DEV_URL = 'http://localhost:3000';
@@ -122,11 +119,7 @@ function checkTradingAgentReady(callback: (ready: boolean) => void) {
     callback(ready);
   };
 
-  const req = http.get(MASTRA_AGENTS_URL, {
-    headers: {
-      'x-trading-agent-token': DESKTOP_AUTH_TOKEN,
-    },
-  }, (res) => {
+  const req = http.get(MASTRA_AGENTS_URL, (res) => {
     if (res.statusCode !== 200) {
       res.resume();
       finish(false);
@@ -483,7 +476,6 @@ function startMissingDevServices() {
     startDevProcess('Mastra API', 'dev:agent', {
       HOST: MASTRA_SERVER_HOST,
       PORT: MASTRA_SERVER_PORT,
-      TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
     });
 
     // 轮询等待 API 就绪
@@ -523,7 +515,6 @@ function startMissingDevServices() {
     startDevProcess('Renderer', 'dev:renderer', {
       MASTRA_SERVER_HOST,
       MASTRA_SERVER_PORT,
-      TRADING_AGENT_DESKTOP_TOKEN: DESKTOP_AUTH_TOKEN,
     });
 
     // Animate progress while Vite boots.

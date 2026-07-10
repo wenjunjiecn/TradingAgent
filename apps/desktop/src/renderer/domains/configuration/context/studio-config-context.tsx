@@ -14,7 +14,6 @@ export interface StudioConfigProviderProps {
 export const MASTRA_STUDIO_CONFIG_LOCAL_STORAGE_KEY = 'mastra-studio-config';
 const AUTH_HEADER_PARAM = 'auth_header';
 const AUTH_HEADER_NAME = 'Authorization';
-const DESKTOP_AUTH_HEADER_NAME = 'x-trading-agent-token';
 
 const readUrlAuthHeader = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};
@@ -34,16 +33,13 @@ const removeUrlAuthHeader = () => {
 };
 
 const getPersistentConfig = (config: StudioConfig, { stripAuthorization = false }: { stripAuthorization?: boolean } = {}): StudioConfig => {
-  const { [DESKTOP_AUTH_HEADER_NAME]: _desktopAuthToken, ...headersWithoutDesktopToken } = config.headers;
-  const { [AUTH_HEADER_NAME]: _authorization, ...headers } = headersWithoutDesktopToken;
+  const { [AUTH_HEADER_NAME]: _authorization, ...headers } = config.headers;
   if (!stripAuthorization && _authorization) {
     return { ...config, headers: { ...headers, [AUTH_HEADER_NAME]: _authorization } };
   }
 
   return { ...config, headers };
 };
-
-const hasDesktopRuntimeAuth = (headers: Record<string, string>) => Boolean(headers[DESKTOP_AUTH_HEADER_NAME]);
 
 const readStoredConfig = () => {
   const storedConfig = localStorage.getItem(MASTRA_STUDIO_CONFIG_LOCAL_STORAGE_KEY);
@@ -82,7 +78,6 @@ export const StudioConfigProvider = ({
   const [urlHeaders] = useState<Record<string, string>>(readUrlAuthHeader);
   const hasUrlHeaders = Object.keys(urlHeaders).length > 0;
   const runtimeHeaders = useMemo(() => ({ ...(defaultHeaders ?? {}), ...urlHeaders }), [defaultHeaders, urlHeaders]);
-  const hasDesktopAuth = hasDesktopRuntimeAuth(runtimeHeaders);
   const { data: instanceStatus, isLoading: isStatusLoading, error } = useMastraInstanceStatus(endpoint, runtimeHeaders);
   const [config, setConfig] = useState<StudioConfig & { isLoading: boolean }>({
     baseUrl: '',
@@ -103,12 +98,6 @@ export const StudioConfigProvider = ({
 
     // Don't run the effect during the fetch request
     if (!instanceStatus?.status) return;
-
-    if (instanceStatus.status === 'active' && hasDesktopAuth) {
-      const nextConfig = { baseUrl: endpoint, headers: runtimeHeaders, apiPrefix: defaultApiPrefix };
-      localStorage.removeItem(MASTRA_STUDIO_CONFIG_LOCAL_STORAGE_KEY);
-      return setConfig({ ...nextConfig, isLoading: false });
-    }
 
     const parsedConfig = readStoredConfig();
     if (parsedConfig) {
@@ -143,7 +132,7 @@ export const StudioConfigProvider = ({
     }
 
     return setConfig({ baseUrl: '', headers: runtimeHeaders, apiPrefix: undefined, isLoading: false });
-  }, [instanceStatus, endpoint, defaultApiPrefix, isStatusLoading, error, runtimeHeaders, urlHeaders, hasUrlHeaders, hasDesktopAuth]);
+  }, [instanceStatus, endpoint, defaultApiPrefix, isStatusLoading, error, runtimeHeaders, urlHeaders, hasUrlHeaders]);
 
   const doSetConfig = (partialNewConfig: Partial<StudioConfig>) => {
     setConfig(prev => {
