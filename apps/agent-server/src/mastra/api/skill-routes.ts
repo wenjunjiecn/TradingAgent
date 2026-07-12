@@ -21,7 +21,15 @@ const listSkillsRoute: ApiRoute = {
   method: 'GET',
   handler: async (c: any) => {
     const skills = await listSkillConfigs();
-    return c.json({ skills });
+    // 标记旧 skill_configs 为「未接入运行时」
+    // 这些 Skill 仅用于元数据展示，不会在 Agent 运行时加载
+    // 用户应迁移到 Workspace Skill（通过 skills/ 目录中的 SKILL.md）
+    const skillsWithStatus = skills.map(skill => ({
+      ...skill,
+      runtimeConnected: false,
+      migrationNotice: 'This skill is not connected to the runtime. Migrate to Workspace Skill for runtime integration.',
+    }));
+    return c.json({ skills: skillsWithStatus });
   },
 };
 

@@ -88,6 +88,22 @@
     "result": "Result",
     "error": "Error",
     "success": "Success",
-    "emptyInput": "Please enter JSON test parameters"
+    "emptyInput": "Please enter JSON test parameters",
+    "formMode": "Form",
+    "jsonMode": "JSON",
+    "complexSchemaNotice": "Schema contains complex structures — JSON mode only",
+    "jsonInputError": "Invalid JSON format",
+    "execute": "Execute",
+    "executing": "Executing...",
+    "history": "Execution History",
+    "historyEmpty": "No execution records",
+    "stats": "Statistics",
+    "totalCalls": "Total Calls",
+    "successRate": "Success Rate",
+    "avgDuration": "Avg Duration",
+    "lastCalled": "Last Called",
+    "schemaValidation": "Schema Validation",
+    "schemaValid": "Output matches schema",
+    "schemaInvalid": "Output does not match schema"
   }
 }

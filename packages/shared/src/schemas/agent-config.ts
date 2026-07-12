@@ -19,6 +19,7 @@ export const AgentConfigSchema = z.object({
   instructions: z.string().describe('Agent system prompt'),
   model: z.string().default('deepseek/deepseek-chat'),
   toolIds: z.array(z.string()).describe('绑定的工具 ID 列表'),
+  skillIds: z.array(z.string()).default([]).describe('绑定的 Skill ID 列表（Workspace Skill）'),
   memoryEnabled: z.boolean().default(true),
   metadata: AgentMetadataSchema.optional(),
   isTemplate: z.boolean().default(false),
@@ -40,7 +41,52 @@ export const AgentTemplateSchema = z.object({
   subAgentIds: z.array(z.string()).optional().describe('子 Agent ID 列表（supervisor 模式）'),
 });
 
+// ─── 统一 Agent 目录 ─────────────────────────────────────────────────
+
+/** Agent 来源标识 */
+export const AgentSourceSchema = z.enum(['stored', 'legacy']).describe('Agent 数据来源：stored = Mastra Stored Agent，legacy = agent_configs 旧表');
+
+/** Agent 加载状态 */
+export const AgentStatusSchema = z.enum(['available', 'error']).describe('Agent 加载状态');
+
+/** 统一 Agent 目录条目 — 供列表展示、选择器和运行时使用 */
+export const UnifiedAgentEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  model: z.string(),
+  toolIds: z.array(z.string()),
+  skillIds: z.array(z.string()).default([]),
+  memoryEnabled: z.boolean().default(true),
+  metadata: AgentMetadataSchema.optional(),
+  source: AgentSourceSchema,
+  status: AgentStatusSchema,
+  errorMessage: z.string().optional(),
+  updatedAt: z.string(),
+});
+
+/** Agent 引用关系类型 */
+export const AgentReferenceTypeSchema = z.enum([
+  'team-member',
+  'team-supervisor',
+  'agent-subagent',
+]);
+
+/** Agent 引用关系 — 删除前检查 */
+export const AgentReferenceSchema = z.object({
+  type: AgentReferenceTypeSchema,
+  entityId: z.string(),
+  entityName: z.string(),
+  entityUrl: z.string().describe('可跳转的前端路由路径'),
+  isOnlyMember: z.boolean().optional().describe('是否为 Team 的唯一成员或 Supervisor'),
+});
+
 // ─── TypeScript Types ────────────────────────────────────────────────
 export type AgentMetadata = z.infer<typeof AgentMetadataSchema>;
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 export type AgentTemplate = z.infer<typeof AgentTemplateSchema>;
+export type AgentSource = z.infer<typeof AgentSourceSchema>;
+export type AgentStatus = z.infer<typeof AgentStatusSchema>;
+export type UnifiedAgentEntry = z.infer<typeof UnifiedAgentEntrySchema>;
+export type AgentReferenceType = z.infer<typeof AgentReferenceTypeSchema>;
+export type AgentReference = z.infer<typeof AgentReferenceSchema>;

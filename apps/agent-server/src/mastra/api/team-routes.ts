@@ -10,6 +10,7 @@ import {
 import { agentTeamTemplates } from '../teams/team-templates';
 import { clearTeamSharedMemory } from '../teams/team-shared-memory';
 import { executeTeamTask } from '../teams/team-execution-engine';
+import { agentRuntimeRegistry } from '../agents/agent-runtime-registry';
 import type { AgentTeamConfig } from '@trading-agent/shared';
 
 /**
@@ -133,7 +134,7 @@ const executeTeamRoute: ApiRoute = {
         return c.json({ error: 'Task is required' }, 400);
       }
 
-      const result = await executeTeamTask(c.get('mastra'), {
+      const result = await executeTeamTask(agentRuntimeRegistry as any, {
         teamId,
         task,
         target,

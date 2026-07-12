@@ -174,6 +174,30 @@ export function useAgentConfigs() {
   });
 }
 
+// ── Agent Reference Check Hooks ──────────────────────────────────────
+
+/** Agent 引用关系（Team 成员、Supervisor、子 Agent） */
+export interface AgentReference {
+  type: 'team-member' | 'team-supervisor' | 'agent-subagent';
+  entityId: string;
+  entityName: string;
+  entityUrl: string;
+  isOnlyMember?: boolean;
+}
+
+/** 检查 Agent 引用关系 — 删除前调用 */
+export function useAgentReferences(agentId: string | null, enabled?: boolean) {
+  return useQuery({
+    queryKey: ['agent-references', agentId],
+    queryFn: () =>
+      apiFetch<{ canDelete: boolean; references: AgentReference[] }>(
+        `/agents/${agentId}/references`,
+      ),
+    enabled: !!agentId && (enabled ?? true),
+    staleTime: 10_000,
+  });
+}
+
 export function useAgentTemplates() {
   return useQuery({
     queryKey: ['agent-templates'],
@@ -238,5 +262,93 @@ export function useIndicators(symbol: string | null, period?: string) {
       }>(`/indicators/${symbol}${period ? `?period=${period}` : ''}`),
     enabled: !!symbol,
     staleTime: 60_000,
+  });
+}
+
+// ── Migration Hooks ──────────────────────────────────────────────────
+
+/** 迁移状态 */
+export interface MigrationStatus {
+  agents: { total: number; ready: number; conflicts: number; skipped: number };
+  skills: { total: number; ready: number; conflicts: number };
+  backups: number;
+  lastBackup: string | null;
+}
+
+/** 迁移执行结果 */
+export interface MigrationResult {
+  backup: { path: string; timestamp: string };
+  agents: { migrated: Array<{ agentId: string; agentName: string; status: string; message?: string }>; totalSuccess: number; totalSkipped: number; totalErrors: number };
+  skills: { migrated: Array<{ skillId: string; skillName: string; status: string; message?: string }>; totalSuccess: number; totalSkipped: number; totalErrors: number };
+}
+
+export function useMigrationStatus() {
+  return useQuery({
+    queryKey: ['migration-status'],
+    queryFn: () => apiFetch<MigrationStatus>('/migrations/status'),
+    staleTime: 30_000,
+  });
+}
+
+export function useExecuteMigration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { conflictStrategy?: 'overwrite' | 'skip' | 'new-id' }) =>
+      apiFetch<MigrationResult>('/migrations/execute', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['migration-status'] });
+      qc.invalidateQueries({ queryKey: ['agent-configs'] });
+    },
+  });
+}
+
+export function useRollbackMigration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { timestamp: string }) =>
+      apiFetch<{ agents: { restored: number; errors: number }; skills: { deleted: number; errors: number } }>(
+        '/migrations/rollback',
+        { method: 'POST', body: JSON.stringify(params) },
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['migration-status'] });
+      qc.invalidateQueries({ queryKey: ['agent-configs'] });
+    },
+  });
+}
+
+// ── Tool Execution History Hooks ────────────────────────────────────
+
+export interface ToolExecutionRecord {
+  id: string;
+  toolId: string;
+  status: 'success' | 'error';
+  durationMs: number;
+  errorMessage?: string;
+  inputPreview?: string;
+  outputPreview?: string;
+  calledAt: string;
+}
+
+export interface ToolExecutionStats {
+  totalCalls: number;
+  successCount: number;
+  errorCount: number;
+  avgDurationMs: number;
+  lastCalledAt: string | null;
+}
+
+export function useToolHistory(toolId: string | null, limit?: number) {
+  return useQuery({
+    queryKey: ['tool-history', toolId, limit],
+    queryFn: () =>
+      apiFetch<{ history: ToolExecutionRecord[]; stats: ToolExecutionStats }>(
+        `/tools/${toolId}/history${limit ? `?limit=${limit}` : ''}`,
+      ),
+    enabled: !!toolId,
+    staleTime: 10_000,
   });
 }

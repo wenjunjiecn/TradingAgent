@@ -4,9 +4,10 @@ import { useCodemirrorTheme } from '@mastra/playground-ui/components/CodeEditor'
 import { CopyButton } from '@mastra/playground-ui/components/CopyButton';
 import { MainContentContent } from '@mastra/playground-ui/components/MainContent';
 import { Tabs, Tab, TabList } from '@mastra/playground-ui/components/Tabs';
+import { Button } from '@mastra/playground-ui/components/Button';
 import { cn } from '@mastra/playground-ui/utils/cn';
 import CodeMirror from '@uiw/react-codemirror';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { ZodType } from 'zod';
 import {
   RequestContextSchemaForm,
@@ -26,7 +27,37 @@ interface ToolExecutorProps {
   toolId: string;
   toolType?: MCPToolType;
   requestContextSchema?: string;
+  /** Raw JSON Schema object (if available) for complex schema detection */
+  inputJsonSchema?: Record<string, any>;
 }
+
+/**
+ * 检测 JSON Schema 是否包含表单生成器不支持的结构
+ *
+ * 不支持的结构: $ref, oneOf, anyOf, allOf, not, if/then/else
+ */
+function hasUnsupportedSchemaFeatures(schema: Record<string, any> | undefined): boolean {
+  if (!schema) return false;
+  const checkObj = (obj: any): boolean => {
+    if (!obj || typeof obj !== 'object') return false;
+    if ('$ref' in obj || 'oneOf' in obj || 'anyOf' in obj || 'allOf' in obj || 'not' in obj) return true;
+    if ('if' in obj && ('then' in obj || 'else' in obj)) return true;
+    // 递归检查 properties 和 items
+    if (obj.properties) {
+      for (const v of Object.values(obj.properties)) {
+        if (checkObj(v)) return true;
+      }
+    }
+    if (obj.items && checkObj(obj.items)) return true;
+    if (obj.additionalProperties && typeof obj.additionalProperties === 'object') {
+      if (checkObj(obj.additionalProperties)) return true;
+    }
+    return false;
+  };
+  return checkObj(schema);
+}
+
+type InputMode = 'form' | 'json';
 
 /** Inner component that can access SchemaRequestContext */
 const ToolExecutorContent = ({
@@ -39,11 +70,28 @@ const ToolExecutorContent = ({
   toolId,
   toolType,
   requestContextSchema,
+  inputJsonSchema,
 }: Omit<ToolExecutorProps, 'executionResult'> & { result: any }) => {
   const theme = useCodemirrorTheme();
   const code = JSON.stringify(result ?? {}, null, 2);
   const [selectedTab, setSelectedTab] = useState('input-data');
   const { schemaValues } = useSchemaRequestContext();
+
+  // 检测 Schema 复杂度，自动选择默认模式
+  const schemaIsComplex = useMemo(() => hasUnsupportedSchemaFeatures(inputJsonSchema), [inputJsonSchema]);
+  const [inputMode, setInputMode] = useState<InputMode>(schemaIsComplex ? 'json' : 'form');
+  const [jsonInput, setJsonInput] = useState('{}');
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  const handleJsonSubmit = useCallback(() => {
+    try {
+      const parsed = JSON.parse(jsonInput);
+      setJsonError(null);
+      handleExecuteTool(parsed, schemaValues);
+    } catch (e) {
+      setJsonError(e instanceof Error ? e.message : 'Invalid JSON');
+    }
+  }, [jsonInput, handleExecuteTool, schemaValues]);
 
   return (
     <MainContentContent hasLeftServiceColumn={true} className="relative">
@@ -57,14 +105,69 @@ const ToolExecutorContent = ({
             </TabList>
           </Tabs>
           <div className={cn('p-5 overflow-y-auto', selectedTab !== 'input-data' && 'hidden')}>
-            <DynamicForm
-              isSubmitLoading={isExecutingTool}
-              schema={zodInputSchema}
-              onSubmit={data => {
-                handleExecuteTool(data, schemaValues);
-              }}
-              className="h-auto pb-7"
-            />
+            {/* 模式切换 */}
+            <div className="flex items-center gap-2 mb-4">
+              <Button
+                variant={inputMode === 'form' ? 'primary' : 'secondary'}
+                size="small"
+                onClick={() => setInputMode('form')}
+                disabled={schemaIsComplex}
+              >
+                Form
+              </Button>
+              <Button
+                variant={inputMode === 'json' ? 'primary' : 'secondary'}
+                size="small"
+                onClick={() => setInputMode('json')}
+              >
+                JSON
+              </Button>
+              {schemaIsComplex && (
+                <span className="text-ui-xs text-neutral3 ml-1">
+                  Schema contains complex structures — JSON mode only
+                </span>
+              )}
+            </div>
+
+            {/* Form 模式 */}
+            {inputMode === 'form' && !schemaIsComplex && (
+              <DynamicForm
+                isSubmitLoading={isExecutingTool}
+                schema={zodInputSchema}
+                onSubmit={data => {
+                  handleExecuteTool(data, schemaValues);
+                }}
+                className="h-auto pb-7"
+              />
+            )}
+
+            {/* JSON 模式 */}
+            {inputMode === 'json' && (
+              <div className="flex flex-col gap-3">
+                <CodeMirror
+                  value={jsonInput}
+                  onChange={val => {
+                    setJsonInput(val);
+                    setJsonError(null);
+                  }}
+                  theme={theme}
+                  extensions={[jsonLanguage]}
+                  height="300px"
+                />
+                {jsonError && (
+                  <p className="text-ui-sm text-error" data-testid="json-input-error">
+                    {jsonError}
+                  </p>
+                )}
+                <Button
+                  variant="primary"
+                  disabled={isExecutingTool}
+                  onClick={() => void handleJsonSubmit()}
+                >
+                  {isExecutingTool ? 'Executing…' : 'Execute'}
+                </Button>
+              </div>
+            )}
           </div>
           {requestContextSchema && (
             <div className={cn('p-5 overflow-y-auto', selectedTab !== 'request-context' && 'hidden')}>
@@ -93,6 +196,7 @@ const ToolExecutor = ({
   toolId,
   toolType,
   requestContextSchema,
+  inputJsonSchema,
 }: ToolExecutorProps) => {
   return (
     <SchemaRequestContextProvider>
@@ -106,6 +210,7 @@ const ToolExecutor = ({
         toolId={toolId}
         toolType={toolType}
         requestContextSchema={requestContextSchema}
+        inputJsonSchema={inputJsonSchema}
       />
     </SchemaRequestContextProvider>
   );

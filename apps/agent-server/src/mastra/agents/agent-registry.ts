@@ -11,6 +11,7 @@ import { getEnabledToolIds } from '../tools/tool-config-store';
 import { agentTemplates } from './agent-templates';
 import { getDb, DB_URL } from '../db';
 import { runMigrations } from '../db-migrations';
+import { getSkillContent } from '../workspace-instance';
 
 // ── 共享 Memory 存储 ──────────────────────────────────────────────────────
 // 所有启用 memory 的 Agent 共用一个 LibSQLStore 实例，避免 N 个独立 DB 连接
@@ -64,6 +65,7 @@ function configFromTemplate(template: AgentTemplate): AgentConfig {
     instructions: template.instructions,
     model: template.model,
     toolIds: [...template.toolIds],
+    skillIds: [],
     memoryEnabled: true,
     metadata: template.metadata,
     isTemplate: false,
@@ -235,6 +237,7 @@ export async function createAgentFromTemplate(
     instructions: template.instructions,
     model: template.model,
     toolIds: [...template.toolIds],
+    skillIds: [],
     memoryEnabled: true,
     metadata: template.metadata,
     subAgentIds: template.subAgentIds ? [...template.subAgentIds] : undefined,
@@ -261,11 +264,30 @@ export async function instantiateAgent(config: AgentConfig, subAgents?: Record<s
 
   const tools = await getToolsByIds(activeToolIds);
 
+  // 加载 Skill 内容并注入到 instructions
+  let instructions = config.instructions;
+  const loadedSkillIds: string[] = [];
+  if (config.skillIds && config.skillIds.length > 0) {
+    const skillParts: string[] = [];
+    for (const skillId of config.skillIds) {
+      const skillContent = await getSkillContent(skillId);
+      if (skillContent) {
+        skillParts.push(`## Skill: ${skillId}\n${skillContent}`);
+        loadedSkillIds.push(skillId);
+      } else {
+        console.warn(`[AgentRegistry] Skill "${skillId}" not found for agent "${config.id}"`);
+      }
+    }
+    if (skillParts.length > 0) {
+      instructions = `${config.instructions}\n\n--- Loaded Skills ---\n${skillParts.join('\n\n')}`;
+    }
+  }
+
   const agentOptions: Record<string, unknown> = {
     id: config.id,
     name: config.name,
     description: config.description,
-    instructions: config.instructions,
+    instructions,
     model: config.model,
     tools,
   };
@@ -277,7 +299,13 @@ export async function instantiateAgent(config: AgentConfig, subAgents?: Record<s
   }
 
   if (config.metadata) {
-    agentOptions.metadata = config.metadata;
+    agentOptions.metadata = {
+      ...config.metadata,
+      // 记录已加载的 Skill ID 列表，供 Trace 和运行详情确认
+      ...(loadedSkillIds.length > 0 ? { loadedSkillIds } : {}),
+    };
+  } else if (loadedSkillIds.length > 0) {
+    agentOptions.metadata = { loadedSkillIds } as any;
   }
 
   // 注入子 agent（supervisor 模式）

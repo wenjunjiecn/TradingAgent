@@ -1,6 +1,7 @@
 import type { ApiRoute } from '@mastra/core/server';
 import { streamReportFollowUp, streamTeamChat } from '../teams/team-chat-engine';
 import { streamMultiAgentChat } from '../teams/team-multi-stream';
+import { agentRuntimeRegistry } from '../agents/agent-runtime-registry';
 
 /**
  * Team Chat 流式 API 路由
@@ -33,7 +34,7 @@ const reportFollowUpStreamRoute: ApiRoute = {
       }
 
       const stream = await streamReportFollowUp(
-        c.get('mastra'),
+        agentRuntimeRegistry as any,
         reportId,
         message,
         history ?? [],
@@ -63,7 +64,7 @@ const teamChatStreamRoute: ApiRoute = {
       }
 
       const { stream, agentName } = await streamTeamChat(
-        c.get('mastra'),
+        agentRuntimeRegistry as any,
         teamId,
         message,
         threadId,
@@ -94,7 +95,7 @@ const teamMultiChatStreamRoute: ApiRoute = {
         return c.json({ error: 'Message is required' }, 400);
       }
 
-      const stream = await streamMultiAgentChat(c.get('mastra'), teamId, message);
+      const stream = await streamMultiAgentChat(agentRuntimeRegistry as any, teamId, message);
 
       return new Response(stream, { headers: SSE_HEADERS });
     } catch (error) {

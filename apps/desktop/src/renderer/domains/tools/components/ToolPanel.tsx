@@ -68,7 +68,8 @@ export const ToolPanel = ({ toolId }: ToolPanelProps) => {
     });
   };
 
-  const zodInputSchema = tool?.inputSchema ? jsonSchemaToZodSchema(parse(tool?.inputSchema)) : z.object({});
+  const parsedInputSchema = tool?.inputSchema ? parse(tool?.inputSchema) : undefined;
+  const zodInputSchema = parsedInputSchema ? jsonSchemaToZodSchema(parsedInputSchema) : z.object({});
 
   if (isLoading) {
     return (
@@ -108,6 +109,7 @@ export const ToolPanel = ({ toolId }: ToolPanelProps) => {
       toolDescription={tool.description}
       toolId={tool.id}
       requestContextSchema={tool.requestContextSchema}
+      inputJsonSchema={typeof parsedInputSchema === 'object' ? parsedInputSchema : undefined}
     />
   );
 };

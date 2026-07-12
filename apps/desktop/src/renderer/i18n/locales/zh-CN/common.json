@@ -27,5 +27,40 @@
   "confidence": "信心度",
   "pattern": "协作模式",
   "members": "成员",
-  "report": "报告"
+  "report": "报告",
+  "migration": {
+    "title": "配置迁移",
+    "subtitle": "将旧配置迁移到统一运行时目录",
+    "status": "迁移状态",
+    "agentsReady": "Agent 待迁移",
+    "skillsReady": "Skill 待迁移",
+    "conflicts": "冲突",
+    "backups": "可用备份",
+    "preview": "预览",
+    "execute": "执行迁移",
+    "executing": "迁移中...",
+    "rollback": "回滚",
+    "rollbackConfirm": "确定回滚到指定备份？当前数据将被覆盖。",
+    "conflictStrategy": "冲突处理策略",
+    "strategyOverwrite": "覆盖",
+    "strategySkip": "跳过",
+    "strategyNewId": "生成新 ID",
+    "backupCreated": "备份已创建",
+    "migrationComplete": "迁移完成",
+    "migrationFailed": "迁移失败",
+    "rollbackComplete": "回滚完成",
+    "totalSuccess": "成功",
+    "totalSkipped": "跳过",
+    "totalErrors": "失败"
+  },
+  "agentReferences": {
+    "title": "引用关系",
+    "teamMember": "Team 成员",
+    "teamSupervisor": "Team 主管",
+    "agentSubagent": "子 Agent",
+    "blockedNotice": "必须先从所有 Team 中移除该 Agent 才能删除。",
+    "onlyMember": "唯一成员 — 请先指定替代成员",
+    "canDelete": "无引用，可以安全删除",
+    "hasReferences": "该 Agent 被 {{count}} 个实体引用"
+  }
 }

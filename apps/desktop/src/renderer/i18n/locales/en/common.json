@@ -27,5 +27,40 @@
   "confidence": "Confidence",
   "pattern": "Pattern",
   "members": "members",
-  "report": "Report"
+  "report": "Report",
+  "migration": {
+    "title": "Configuration Migration",
+    "subtitle": "Migrate legacy configs to the unified runtime catalog",
+    "status": "Migration Status",
+    "agentsReady": "Agents to migrate",
+    "skillsReady": "Skills to migrate",
+    "conflicts": "Conflicts",
+    "backups": "Available backups",
+    "preview": "Preview",
+    "execute": "Execute Migration",
+    "executing": "Migrating...",
+    "rollback": "Rollback",
+    "rollbackConfirm": "Are you sure you want to rollback? Current data will be overwritten.",
+    "conflictStrategy": "Conflict Strategy",
+    "strategyOverwrite": "Overwrite",
+    "strategySkip": "Skip",
+    "strategyNewId": "Generate New ID",
+    "backupCreated": "Backup created",
+    "migrationComplete": "Migration complete",
+    "migrationFailed": "Migration failed",
+    "rollbackComplete": "Rollback complete",
+    "totalSuccess": "Success",
+    "totalSkipped": "Skipped",
+    "totalErrors": "Errors"
+  },
+  "agentReferences": {
+    "title": "References",
+    "teamMember": "Team Member",
+    "teamSupervisor": "Team Supervisor",
+    "agentSubagent": "Sub-agent",
+    "blockedNotice": "You must remove this agent from all teams before it can be deleted.",
+    "onlyMember": "Only member — assign a replacement first",
+    "canDelete": "No references, safe to delete",
+    "hasReferences": "This agent is referenced by {{count}} entit{{count, plural, one {y} other {ies}}}}"
+  }
 }

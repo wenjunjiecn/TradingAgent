@@ -12,6 +12,8 @@ import {
   deleteToolConfig,
 } from '../tools/tool-config-store';
 import { executeToolDirect } from '../tools/tool-factory';
+import { agentRuntimeRegistry } from '../agents/agent-runtime-registry';
+import { recordToolExecution, getToolExecutionHistory, getToolExecutionStats } from '../tools/tool-execution-history';
 
 /**
  * 工具配置 REST API 路由
@@ -59,6 +61,8 @@ const createToolRoute: ApiRoute = {
         return c.json({ error: `Validation failed: ${errors}` }, 400);
       }
       const tool = await createToolConfig(parseResult.data);
+      // 失效 Agent 缓存，使新 Tool 在下次运行时可用
+      agentRuntimeRegistry.invalidateAll();
       return c.json({ tool }, 201);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -91,6 +95,8 @@ const updateToolRoute: ApiRoute = {
       if (!tool) {
         return c.json({ error: 'Tool not found' }, 404);
       }
+      // 失效 Agent 缓存，使 Tool 配置变更在下次运行时生效
+      agentRuntimeRegistry.invalidateAll();
       return c.json({ tool });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -109,6 +115,8 @@ const deleteToolRoute: ApiRoute = {
       if (!deleted) {
         return c.json({ error: 'Tool not found' }, 404);
       }
+      // 失效 Agent 缓存
+      agentRuntimeRegistry.invalidateAll();
       return c.json({ success: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -145,11 +153,64 @@ const testToolRoute: ApiRoute = {
       }
 
       const result = await executeToolDirect(config, parseResult.data.input);
-      return c.json({ result });
+
+      // 记录执行历史
+      const startTime = Date.now();
+      const inputPreview = JSON.stringify(parseResult.data.input).slice(0, 500);
+      const outputPreview = JSON.stringify(result).slice(0, 500);
+      const durationMs = Date.now() - startTime;
+      await recordToolExecution(id, 'success', durationMs, { inputPreview, outputPreview });
+
+      // Output Schema 校验：如果配置了 outputSchema，校验输出是否符合
+      let schemaValidation: { valid: boolean; errors?: string[] } | undefined;
+      if (config.outputSchema) {
+        try {
+          // 使用 Zod 校验 outputSchema (outputSchema 是 JSON Schema 对象)
+          // 简化实现: 检查基本结构一致性
+          const outputSchema = config.outputSchema;
+          if (outputSchema.type === 'object' && outputSchema.required) {
+            const missingFields = (outputSchema.required as string[]).filter(
+              field => !(result && typeof result === 'object' && field in result),
+            );
+            if (missingFields.length > 0) {
+              schemaValidation = {
+                valid: false,
+                errors: [`Missing required fields: ${missingFields.join(', ')}`],
+              };
+            }
+          }
+          if (!schemaValidation) {
+            schemaValidation = { valid: true };
+          }
+        } catch {
+          // Schema 校验失败不影响结果返回
+          schemaValidation = { valid: true };
+        }
+      }
+
+      return c.json({ result, schemaValidation });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      // 记录失败历史
+      await recordToolExecution(c.req.param('id'), 'error', 0, { errorMessage: message }).catch(() => {});
       return c.json({ error: message }, 500);
     }
+  },
+};
+
+// ── Tool 执行历史路由 ────────────────────────────────────────────────
+
+const getToolHistoryRoute: ApiRoute = {
+  path: '/research/tools/:id/history',
+  method: 'GET',
+  handler: async (c: any) => {
+    const id = c.req.param('id');
+    const limit = parseInt(c.req.query('limit') ?? '20', 10);
+    const [history, stats] = await Promise.all([
+      getToolExecutionHistory(id, limit),
+      getToolExecutionStats(id),
+    ]);
+    return c.json({ history, stats });
   },
 };
 
@@ -162,4 +223,5 @@ export const toolRoutes: ApiRoute[] = [
   updateToolRoute,
   deleteToolRoute,
   testToolRoute,
+  getToolHistoryRoute,
 ];

@@ -6,7 +6,10 @@ import {
   updateAgentConfig,
   deleteAgentConfig,
   createAgentFromTemplate,
+  listAgentConfigSummaries,
 } from '../agents/agent-registry';
+import { agentRuntimeRegistry } from '../agents/agent-runtime-registry';
+import { canDeleteAgent } from '../agents/agent-reference-checker';
 import { agentTemplates } from '../agents/agent-templates';
 import { teamRoutes } from './team-routes';
 import { teamChatRoutes } from './team-chat-routes';
@@ -23,7 +26,6 @@ import {
 import { getMarketData } from '../tools/market-data-tool';
 import { calculateIndicators } from '../tools/technical-analysis-tool';
 import { executeCollaboration } from '../workflows/collaboration-engine';
-import { listAgentConfigSummaries } from '../agents/agent-registry';
 import type { CollaborationPattern } from '@trading-agent/shared';
 
 /**
@@ -125,7 +127,7 @@ const startCollaborationRoute: ApiRoute = {
         return c.json({ error: 'Symbol is required' }, 400);
       }
 
-      const result = await executeCollaboration(c.get('mastra'), {
+      const result = await executeCollaboration(agentRuntimeRegistry as any, {
         symbol: symbol.toUpperCase(),
         pattern: (pattern ?? 'council') as CollaborationPattern,
         participantAgentIds: participantAgentIds ?? [
@@ -152,10 +154,15 @@ const listAgentsRoute: ApiRoute = {
   path: '/research/agents',
   method: 'GET',
   handler: async (c: any) => {
+    // unified=true 时返回 UnifiedAgentEntry（含 source、status）
+    const unified = c.req.query('unified') === 'true';
+    if (unified) {
+      const agents = await agentRuntimeRegistry.listUnifiedAgents();
+      return c.json({ agents });
+    }
     // 默认返回摘要（轻量），full=true 时返回完整配置
     const full = c.req.query('full') === 'true';
     if (full) {
-      const { listAgentConfigs } = await import('../agents/agent-registry');
       const configs = await listAgentConfigs();
       return c.json({ agents: configs });
     }
@@ -169,6 +176,15 @@ const getAgentRoute: ApiRoute = {
   method: 'GET',
   handler: async (c: any) => {
     const id = c.req.param('id');
+    // unified=true 时返回 UnifiedAgentEntry（含 source、status）
+    const unified = c.req.query('unified') === 'true';
+    if (unified) {
+      const entry = await agentRuntimeRegistry.getUnifiedAgent(id);
+      if (!entry) {
+        return c.json({ error: 'Agent not found' }, 404);
+      }
+      return c.json({ agent: entry });
+    }
     const config = await getAgentConfig(id);
     if (!config) {
       return c.json({ error: 'Agent not found' }, 404);
@@ -184,6 +200,8 @@ const createAgentRoute: ApiRoute = {
     try {
       const body = await c.req.json();
       const config = await createAgentConfig(body);
+      // 失效缓存，使新 Agent 在下次运行时可用
+      agentRuntimeRegistry.invalidateAll();
       return c.json({ agent: config }, 201);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -203,6 +221,8 @@ const updateAgentRoute: ApiRoute = {
       if (!config) {
         return c.json({ error: 'Agent not found' }, 404);
       }
+      // 失效缓存，使修改后的配置在下一次 Run 中生效
+      agentRuntimeRegistry.invalidateAgent(id);
       return c.json({ agent: config });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -216,10 +236,24 @@ const deleteAgentRoute: ApiRoute = {
   method: 'DELETE',
   handler: async (c: any) => {
     const id = c.req.param('id');
+
+    // 检查引用关系：有引用时阻止删除
+    const { canDelete, references } = await canDeleteAgent(id);
+    if (!canDelete) {
+      return c.json({
+        error: 'Agent is referenced by other entities',
+        code: 'AGENT_REFERENCED',
+        references,
+      }, 409);
+    }
+
     const deleted = await deleteAgentConfig(id);
     if (!deleted) {
       return c.json({ error: 'Agent not found' }, 404);
     }
+
+    // 失效缓存
+    agentRuntimeRegistry.invalidateAgent(id);
     return c.json({ success: true });
   },
 };
@@ -242,11 +276,26 @@ const createAgentFromTemplateRoute: ApiRoute = {
       if (!config) {
         return c.json({ error: 'Template not found' }, 404);
       }
+      // 失效缓存
+      agentRuntimeRegistry.invalidateAll();
       return c.json({ agent: config }, 201);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return c.json({ error: message }, 500);
     }
+  },
+};
+
+// ── Agent 引用关系路由 ─────────────────────────────────────────────────
+
+const getAgentReferencesRoute: ApiRoute = {
+  path: '/research/agents/:id/references',
+  method: 'GET',
+  handler: async (c: any) => {
+    const id = c.req.param('id');
+    const { canDeleteAgent } = await import('../agents/agent-reference-checker');
+    const { canDelete, references } = await canDeleteAgent(id);
+    return c.json({ canDelete, references });
   },
 };
 
@@ -310,6 +359,8 @@ export const researchRoutes: ApiRoute[] = [
   deleteAgentRoute,
   listAgentTemplatesRoute,
   createAgentFromTemplateRoute,
+  // Agent references
+  getAgentReferencesRoute,
   // Agent Team configs + execution
   ...teamRoutes,
   // Agent Team chat (streaming)

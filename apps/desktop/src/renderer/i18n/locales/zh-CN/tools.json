@@ -88,6 +88,22 @@
     "result": "执行结果",
     "error": "执行出错",
     "success": "执行成功",
-    "emptyInput": "请输入 JSON 格式的测试参数"
+    "emptyInput": "请输入 JSON 格式的测试参数",
+    "formMode": "表单",
+    "jsonMode": "JSON",
+    "complexSchemaNotice": "Schema 包含复杂结构 — 仅支持 JSON 模式",
+    "jsonInputError": "JSON 格式错误",
+    "execute": "执行",
+    "executing": "执行中...",
+    "history": "执行历史",
+    "historyEmpty": "暂无执行记录",
+    "stats": "统计",
+    "totalCalls": "总调用",
+    "successRate": "成功率",
+    "avgDuration": "平均耗时",
+    "lastCalled": "最后调用",
+    "schemaValidation": "Schema 校验",
+    "schemaValid": "输出符合 Schema",
+    "schemaInvalid": "输出不符合 Schema"
   }
 }
